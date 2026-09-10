@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Неделя 16 · Генеральная репетиция и план на январь–февраль</title>
+<link rel="stylesheet" href="../slide.css">
+</head>
+<body>
+<section><h1>Неделя 16 · Генеральная репетиция и план на январь–февраль</h1></section>
+<section><h2>План занятия (единая контрольная)</h2><li><strong>Секция 1</strong>: НТО-стиль Python.</li><li><strong>Секция 2</strong>: ВсОШ теория + декодирование.</li><li><strong>Секция 3</strong>: CTF-категории.</li><li><strong>Секция 4</strong>: Верченко письменные.</li><li><strong>Секция 5</strong>: командная web-задача.</li><li><strong>Разбор</strong> + личный план.</li></section>
+<section><h2>На прошлой неделе → сегодня</h2><p>За 15 недель пройдены все форматы 4 олимпиад. Сегодня — **генеральная</p><p>репетиция**: единая смешанная контрольная по всем направлениям и план</p><p>на январь–февраль. Замыкаем цикл и готовимся к следующим турам.</p></section>
+<section><h2>Теория. Зачем смешанная контрольная</h2><li>Выявляет «дыры» по конкретным олимпиадам, а не только по темам.</li><li>Учит переключаться между форматами (Python → ВсОШ → CTF → Верченко).</li></section>
+<section><h2>Секция 1. НТО-стиль Python</h2><p>Задачи образца Этапа I:</p><li>сумма цифр числа;</li><li>максимум из трёх без <code>max()</code>;</li><li>НОД двух чисел;</li><li>перебор делителей.</li><p>Оценка: баллы за прохождение тестов (как на олимпиаде).</p></section>
+<section><h2>Секция 1b. Примеры из НТО (перебор)</h2><pre><code>import math
+n = int(input())
+cnt = 0
+for d in range(1, int(math.isqrt(n)) + 1):
+    if n % d == 0:
+        cnt += 1
+        if d != n // d:
+            cnt += 1
+print(cnt)   # сколько делителей у 36?</code></pre><details><summary>Ответ</summary><div class='reveal'><p>У 36 делители: 1,2,3,4,6,9,12,18,36 → <strong>9</strong>.</p><p>Флаг-пример: <code>FINAL{&lt;количество-делителей&gt;}</code> → <code>FINAL{9}</code>.</p></div></details></section>
+<section><h2>Секция 2. ВсОШ теория + декодирование</h2><li>Вопросы: порты, <code>~</code>, SHA-256, CSP, iptables.</li><li>Практика: раскрутить Base64→Base32, hex→текст.</li><p>Ответы — строго в <code>vsosh{...}</code>.</p></section>
+<section><h2>Секция 2b. Декодирование цепочки</h2><pre><code>import base64
+v = &quot;INKEM===&quot;       # Base32
+print(base64.b32decode(v))   # какое слово?</code></pre><details><summary>Ответ</summary><div class='reveal'><p><code>base64.b32decode(&quot;INKEM===&quot;)</code> → <code>b&#x27;CTF&#x27;</code>. Флаг-пример: <code>vsosh{CTF}</code>.</p></div></details></section>
+<section><h2>Секция 3. CTF-категории</h2><li>CRYPTO (Цезарь/XOR).</li><li>FORENSIC (strings/флаг в файле).</li><li>PPC (2 строки Python на лог).</li><p>Указать категорию и добыть флаг.</p></section>
+<section><h2>Секция 4. Верченко письменные</h2><li>«Анализ сети»: найти набор максимальной суммы влияний.</li><li>«Контрольная сумма»: проверить целостность.</li><p>Решать аккуратно, на бумаге.</p></section>
+<section><h2>Секция 5. Командная web-мини-задача</h2><p>Парами на учебной машине:</p><li>nmap → найти порты;</li><li>отыскать LFI/SQLi → добыть флаг;</li><li>оформить короткий отчёт.</li><p>Оцениваем скорость и корректность отчёта.</p></section>
+<section><h2>Чек-лист знаний к концу цикла</h2><li>Python: ввод/вывод, условия, циклы, строки, списки, НОД.</li><li>Порты и протоколы.</li><li>Linux: команды, chmod, iptables, <code>~</code>.</li><li>Крипто: перестановка, Цезарь, Виженер, XOR, Кардано, сумма.</li><li>Декодирование: Base32/64, hex, раскрутка.</li><li>Wireshark/.pcap: тип атаки.</li><li>Web: LFI/SQLi/SSTI/Race; nmap.</li><li>CTF-категории и инструменты.</li><li>Верченко: письменные задачи.</li></section>
+<section><h2>Резюме: завершение системного курса</h2><li>Единая схема каждого занятия: теория → практика → разбор.</li><li>Все 4 олимпиады сведены в одну систему (карта нед. 15).</li><li>Личный план на январь–февраль и следующие туры.</li><li>Главный рецепт: системные повторения вместо «зубрёжки».</li></section>
+<div class="nav">
+  <button onclick="nav(-1)" aria-label="Назад">&#8592;</button>
+  <span id="pg">1 / 13</span>
+  <button onclick="nav(1)" aria-label="Вперёд">&#8594;</button>
+</div>
+<script src="../slide.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Неделя 3 · Основы Linux и математика для Python</title>
+<link rel="stylesheet" href="../slide.css">
+</head>
+<body>
+<section><h1>Неделя 3 · Основы Linux и математика для Python</h1></section>
+<section><h2>План занятия</h2><li><strong>Теория</strong>: базовые команды Linux и как читать результаты.</li><li><strong>Теория</strong>: права файлов (chmod) — механика битов.</li><li><strong>Теория</strong>: iptables — сетевые правила.</li><li><strong>Теория</strong>: математика Python — НОД/НОК/делимость.</li><li><strong>Практика</strong> + разбор реальной задачи из архива.</li></section>
+<section><h2>На прошлой неделе → сегодня</h2><p>На нед. 2 мы изучили порты и протоколы. Теперь зайдём <strong>внутрь машины</strong>:</p><p>Linux-команды, права и правила — это то, чем оперирует и атакующий, и ВсОШ-вопросы. Плюс доведём математику Python, от которой зависят задачи НТО.</p></section>
+<section><h2>Теория. Принцип одной задачи — инструментов</h2><li>Каждая команда — маленькая утилита, делает одно дело.</li><li>Сложные операции = объединение простых (конвейер <code>|</code>).</li><li>Читаем вывод слева направо и комбинируем по смыслу.</li></section>
+<section><h2>Зачем Linux на олимпиадном треке ИБ</h2><li>ВсОШ — вопросы про <code>~</code>, <code>chmod</code>, <code>iptables</code>.</li><li>НТО/Иннополис — командная атака = работа в Linux (nmap на нед. 9).</li><li>«Linux-грамотность» нужна и в теории, и в практике.</li></section>
+<section><h2>Тема 3.1. Базовые команды Linux</h2><table><thead><tr><th>Команда</th><th>Что делает</th></tr></thead><tbody><tr><td><code>ls</code>, <code>cd</code>, <code>pwd</code></td><td>навигация</td></tr><tr><td><code>cat file</code>, <code>less</code>, <code>head</code></td><td>просмотр файлов</td></tr><tr><td><code>chmod 755 file</code></td><td>права: r/w/x, 7=rwx,5=r-x</td></tr><tr><td><code>iptables -A INPUT ...</code></td><td>правила сетевого фильтра</td></tr><tr><td><code>sudo</code>, <code>whoami</code>, <code>id</code></td><td>привилегии</td></tr><tr><td><code>grep</code>, <code>find</code></td><td>поиск</td></tr><tr><td><code>strings</code>, <code>xxd</code>, <code>file</code></td><td>анализ данных (FORENSIC)</td></tr><tr><td><code>ssh</code>, <code>curl</code>, <code>wget</code></td><td>удалённый доступ/загрузка</td></tr></tbody></table></section>
+<section><h2>Права файлов: как считать chmod</h2><li>r=4, w=2, x=1 → сумма: 7=rwx, 6=rw-, 5=r-x, 4=r--, 0=---.</li><li><code>chmod 600</code> = владелец rw-, остальные ничего.</li><li><code>chmod 755</code> = владелец rwx, остальные r-x.</li><li>Права пишут по 3 группам: владелец / группа / остальные.</li></section>
+<section><h2>Соответствие «число → права» (шпаргалка)</h2><table><thead><tr><th>Число</th><th>Бинарно</th><th>Права</th></tr></thead><tbody><tr><td>7</td><td>111</td><td>rwx</td></tr><tr><td>6</td><td>110</td><td>rw-</td></tr><tr><td>5</td><td>101</td><td>r-x</td></tr><tr><td>4</td><td>100</td><td>r--</td></tr><tr><td>0</td><td>000</td><td>---</td></tr></tbody></table></section>
+<section><h2>Теория. chmod — это три бита</h2><li>Каждое право — бит: read=4 (100), write=2 (010), execute=1 (001).</li><li>Число = сумма включённых битов: 7=4+2+1 (все три).</li><li>Три цифры = три группы: владелец / группа / остальные.</li><li><code>chmod 640</code> = владелец rw-, группа r--, остальные ---.</li></section>
+<section><h2>Теория. Как читать iptables-правило</h2><pre><code>iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+        |
+        |   цепочка    протокол  порт назначения   действие</code></pre><li><code>-A INPUT</code> — добавить правило к входящим пакетам.</li><li><code>-p</code> — протокол (tcp/udp), <code>--dport</code>/<code>--sport</code> — порт назначения/источника.</li><li><code>-j</code> — действие (ACCEPT/DROP).</li><li>Порядок правил важен: первое совпавшее применяется.</li></section>
+<section><h2>Теория. Делимость — через остатки</h2><li><code>x % 2</code> — чётность; <code>x % 10</code> — последняя цифра; <code>x // 10</code> — отбросить последнюю.</li><li>«Високосный»: год кратен 400, или (кратен 4 и не кратен 100).</li><li>Проверка «n делится на m» = <code>n % m == 0</code>.</li></section>
+<section><h2>Вопросы ВсОШ в тему</h2><li>«Символ домашней директории» → <code>~</code>.</li><li>«Составь правило iptables, запрещающее входящий DNS-трафик от любого источника» → <code>iptables -A INPUT -p udp --dport 53 -j DROP</code>.</li><li>Как отличить <code>--dport</code> (назначение) и <code>--sport</code> (источник): читаем в сторону пакета.</li></section>
+<section><h2>Тема 3.2. Математика в Python (для задач НТО)</h2><pre><code>import math
+a, b = map(int, input().split())
+print(a + b, a - b, a * b, a // b, a % b)
+print(&quot;НОД:&quot;, math.gcd(a, b))
+print(&quot;НОК:&quot;, a * b // math.gcd(a, b))</code></pre><li><code>//</code> — целочисленное деление; <code>%</code> — остаток; <code>math.gcd</code> — НОД.</li><li>НОК = <code>a*b//НОД</code> (формула).</li></section>
+<section><h2>Алгоритм Евклида (сколько будет платой)</h2><pre><code>def gcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a</code></pre><li>Работает за O(log min(a,b)) — быстро на больших числах.</li></section>
+<section><h2>ПРАКТИКА А. Делимость и остатки</h2><li>Сумма цифр числа (<code>%10</code> + <code>//10</code> в цикле).</li><li>Проверка: делится ли n на m.</li><li>Количество чётных чисел от 1 до n.</li><li>«Високосный год» через <code>%4</code>, <code>%100</code>, <code>%400</code>.</li></section>
+<section><h2>ПРАКТИКА Б. НОД и НОК</h2><li>НОД через <code>math.gcd</code> и вручную (Евклид).</li><li>НОК двух чисел формулой.</li><li>Сокращение дроби a/b (поделить на НОД).</li><li>«Три квадрата» снова — акцент на <code>//</code> и <code>%</code>.</li></section>
+<section><h2>ПРАКТИКА В. Linux-симуляция</h2><li>Команда для просмотра файла <code>passwd</code>.</li><li>Права, которые даст <code>chmod 640</code>.</li><li>Что делает <code>iptables -A INPUT -p tcp --dport 22 -j DROP</code> (запрет SSH).</li><li>Собрать «цепочку»: <code>cd → ls → cat → grep &quot;flag&quot;</code> (как ищут флаг).</li></section>
+<section><h2>РАЗБОР ФЛАГА. Правильная сумма цифр</h2><p>Ошибка новичка: берут последнюю цифру, но забывают сдвиг.</p><pre><code>n = int(input())
+total = 0
+while n &gt; 0:
+    total += n % 10
+    n //= 10          # без этой строки — вечный цикл
+print(total)          # считай для 2026</code></pre><details><summary>Ответ</summary><div class='reveal'><p>Для 2026: <code>2+0+2+6 = 10</code>. Флаг-формат: <code>NT{&lt;сумма-цифр&gt;}</code> → <code>NT{10}</code>.</p></div></details></section>
+<section><h2>Типовые ошибки</h2><li>Путают <code>//</code> (цел.) и <code>%</code> (остаток).</li><li>Забывают <code>import math</code> перед <code>math.gcd</code>.</li><li>В chmod путают порядок (7=rwx пишут наоборот).</li><li>В iptables путают <code>--dport</code> и <code>--sport</code>.</li><li>В цикле суммы цифр забывают <code>n //= 10</code> — вечный цикл.</li></section>
+<section><h2>Что уносим</h2><li>Навигация и просмотр файлов; пересчёт chmod.</li><li>Математика: <code>//</code>, <code>%</code>, НОД/НОК; Евклид.</li><li>iptables: <code>--dport</code>/<code>--sport</code>, <code>-A INPUT</code>.</li></section>
+<section><h2>Резюме: что уносим</h2><li>Linux: навигация, просмотр, поиск; принцип «одна утилита — одно дело».</li><li>chmod = три бита × три группы; пересчёт числа↔прав.</li><li>iptables: цепочка/протокол/порт/действие.</li><li>Математика Python: делимость через <code>%</code>, НОД/НОК, Евклид.</li></section>
+<section><h2>Свяжем с нед. 4</h2><p>Математика и остатки — опора криптографии. На нед. 4 применим</p><p>те же <code>%</code>, <code>//</code> и НОД к <strong>шифрам</strong>: перестановка, Цезарь, Виженер, XOR.</p><p>Схема занятия остаётся: теория → практика → разбор.</p></section>
+<div class="nav">
+  <button onclick="nav(-1)" aria-label="Назад">&#8592;</button>
+  <span id="pg">1 / 22</span>
+  <button onclick="nav(1)" aria-label="Вперёд">&#8594;</button>
+</div>
+<script src="../slide.js"></script>
+</body>
+</html>

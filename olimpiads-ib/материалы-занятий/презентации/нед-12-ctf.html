@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Неделя 12 · Введение в CTF и категории</title>
+<link rel="stylesheet" href="../slide.css">
+</head>
+<body>
+<section><h1>Неделя 12 · Введение в CTF и категории</h1></section>
+<section><h2>План занятия</h2><li><strong>Теория</strong>: что такое CTF и структура таска.</li><li><strong>Теория</strong>: категории и инструмент под каждую.</li><li><strong>Практика</strong>: мини-таски CRYPTO/FORENSIC/WEB/PPC.</li><li><strong>Мини-CTF-раунд</strong> + разбор.</li></section>
+<section><h2>На прошлой неделе → сегодня</h2><p>Командный кейс (нед. 11) — частный случай CTF. Сегодня систематизируем весь</p><p>CTF-формат: категории, инструменты, порядок решения таска. Это готовит</p><p>к отбору Innopolis (тур1 = CTF task-based). Схема занятия — та же.</p></section>
+<section><h2>Теория. Структура таска = «данные → категория → инструмент → флаг»</h2><li>Таск даёт: описание, файл/сервис/текст.</li><li>Определяем категорию по виду данных.</li><li>Применяем инструмент категории.</li><li>Получаем флаг и проверяем формат.</li><li>Ошибка в определении категории = применение не того инструмента.</li></section>
+<section><h2>Что такое CTF</h2><li>Capture The Flag — соревнование, где за решение таска получают «флаг».</li><li>Флаг = скомпрометированные данные, пароль, строка-ответ.</li><li>Innopolis отбор проходит в формате CTF task-based.</li></section>
+<section><h2>Тема 12.1. Категории CTF</h2><table><thead><tr><th>Категория</th><th>Что это</th></tr></thead><tbody><tr><td>NETWORK</td><td>сетевые протоколы, анализ трафика</td></tr><tr><td>PPC</td><td>программирование/автоматизация</td></tr><tr><td>MISC</td><td>логика, нестандартное мышление</td></tr><tr><td>PWN</td><td>уязвимости в скомпилированных приложениях</td></tr><tr><td>CRYPTO</td><td>шифры, кодирование</td></tr><tr><td>FORENSIC</td><td>анализ файлов/памяти/метаданных</td></tr><tr><td>WEB</td><td>уязвимости веб-приложений</td></tr><tr><td>OSINT</td><td>поиск по открытым источникам</td></tr><tr><td>REVERSE</td><td>реверс исполняемых файлов</td></tr></tbody></table></section>
+<section><h2>Тема 12.2. Категории под микроскопом</h2><li>CRYPTO: openssl, xxd, base64/32.</li><li>FORENSIC: file, strings, binwalk, EXIF.</li><li>WEB: gobuster, burp, sqlmap (осторожно).</li><li>OSINT: поиск, метаданные, соцсети.</li></section>
+<section><h2>Инструмент на каждую категорию (таблица-шпаргалка)</h2><table><thead><tr><th>Категория</th><th>Инструмент-ключ</th></tr></thead><tbody><tr><td>NETWORK</td><td>Wireshark, nmap</td></tr><tr><td>PPC</td><td>Python</td></tr><tr><td>MISC</td><td>логика, руками</td></tr><tr><td>PWN</td><td>gdb, pwntools</td></tr><tr><td>CRYPTO</td><td>openssl, base64/32</td></tr><tr><td>FORENSIC</td><td>file, strings, binwalk</td></tr><tr><td>WEB</td><td>gobuster, burp</td></tr><tr><td>OSINT</td><td>поиск, Google, метаданные</td></tr><tr><td>REVERSE</td><td>objdump, ghidra, strings</td></tr></tbody></table></section>
+<section><h2>ПРАКТИКА А. MISC и CRYPTO</h2><li>Декодировать base64-строку.</li><li>Шифр Цезаря: расшифровать слово.</li><li>В строке заметить «перевёрнутый» текст (rot13/отработка).</li><p>Формат: найти ASCII-флаг.</p></section>
+<section><h2>ПРАКТИКА Б. FORENSIC</h2><li><code>file mystery</code> — тип.</li><li><code>strings mystery | grep -i flag</code> — поиск.</li><li><code>binwalk mystery</code> — вшитые данные/архивы.</li><li>Метаданные изображения (EXIF).</li><p>Найти «секрет» в учебном файле.</p></section>
+<section><h2>ПРАКТИКА В. WEB (повтор к нед. 10)</h2><li>Что такое gobuster и зачем.</li><li>Как смотреть исходники и robots.txt.</li><li>Распознать технологию (Flask/Node).</li><li>Простая дефолтная проверка (LFI, комменты).</li></section>
+<section><h2>ПРАКТИКА Г. PPC (Python)</h2><p>Автоматизация обработки больших данных:</p><pre><code>import re
+lines = open(&#x27;log.txt&#x27;).read().splitlines()
+ips = set(re.findall(r&#x27;\b\d+\.\d+\.\d+\.\d+\b&#x27;, &#x27;\n&#x27;.join(lines)))
+print(sorted(ips))</code></pre><p>Ключевое: regex, множества, чтение файла.</p></section>
+<section><h2>РАЗБОР ФЛАГА. Мини-цепочка «категории»</h2><p>Строка <code>JNCVS===</code> (Base32, категория CRYPTO):</p><pre><code>import base64
+print(base64.b32decode(&quot;JNCVS===&quot;))   # что получится?</code></pre><details><summary>Ответ</summary><div class='reveal'><p><code>base64.b32decode(&quot;JNCVS===&quot;)</code> → <code>b&#x27;KEY&#x27;</code>.</p><p>Флаг-формат: <code>CTF{&lt;слово&gt;}</code> → <code>CTF{KEY}</code>.</p></div></details></section>
+<section><h2>Тема 12.3. Инструменты-джентльменский набор</h2><p><code>nmap</code>, <code>gobuster</code>, <code>sqlmap</code> (аккуратно), <code>burpsuite</code>, <code>wireshark</code>,</p><p><code>john</code>, <code>hashcat</code>, <code>gdb</code>. Плюс Python для PPC.</p><p>Не всё ставим сразу — по мере необходимости.</p></section>
+<section><h2>Общий план решения таска</h2><li>Понять категорию/технологию.</li><li>Собрать данные (файлы, трафик, исходники).</li><li>Применить инструмент категории.</li><li>Получить флаг, проверить формат.</li><li>Автоматизировать повторы (Python).</li></section>
+<section><h2>Мини-CTF-раунд</h2><p>.</p><p>Каждый решает сам/в паре; считаем флаги.</p><p>Разбор после — как «раскручивали» таск.</p></section>
+<section><h2>Типовые ошибки</h2><li>Сдают не флаг, а «сырьё» (нужно отобрать ответ в формате).</li><li>В FORENSIC не смотрят <code>strings</code>/<code>binwalk</code> — пропускают спрятанное.</li><li>В PPC пытаются руками, а не скриптом (потеря времени).</li><li>Не определяют категорию → бьют не тем инструментом.</li></section>
+<section><h2>Резюме: что уносим</h2><li>CTF-таск = данные → категория → инструмент → флаг.</li><li>Категории и ключевые инструменты (шпаргалка).</li><li>Порядок решения и типовые ошибки (не бей не тем инструментом).</li><li>Готовность к CTF-формату отбора Innopolis.</li></section>
+<section><h2>Свяжем с нед. 13</h2><p>CTF-категория CRYPTO заслуживает углубления. На нед. 13 — продвинутая</p><p>криптография: контрольные суммы, XOR, частотный анализ, решётка Кардано.</p><p>Это прямое продолжение и готовка к Верченко и CTF-CRYPTO.</p></section>
+<div class="nav">
+  <button onclick="nav(-1)" aria-label="Назад">&#8592;</button>
+  <span id="pg">1 / 19</span>
+  <button onclick="nav(1)" aria-label="Вперёд">&#8594;</button>
+</div>
+<script src="../slide.js"></script>
+</body>
+</html>

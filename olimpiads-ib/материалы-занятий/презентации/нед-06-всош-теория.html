@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Неделя 6 · Все категории ВсОШ (теория + декодирование)</title>
+<link rel="stylesheet" href="../slide.css">
+</head>
+<body>
+<section><h1>Неделя 6 · Все категории ВсОШ (теория + декодирование)</h1></section>
+<section><h2>План занятия</h2><li><strong>Теория</strong>: карта теоретических вопросов ВсОШ.</li><li><strong>Теория</strong>: жизненный цикл угрозы/инцидента.</li><li><strong>Теория</strong>: Base32/Base64 и алфавиты кодирования.</li><li><strong>Практика</strong>: «раскрутка» кодирования + работа с файлами.</li><li><strong>Разбор</strong>: реальные таски школьного-9.</li></section>
+<section><h2>На прошлой неделе → сегодня</h2><p>На нед. 5 мы решали алгоритмами. Сегодня соберём <strong>всю теорию ВсОШ</strong>:</p><p>порты, Linux, браузер, хеши, крипто — и доведём до автоматизма «раскрутку`</p><p>кодирования. Схема занятия та же: теория → практика → разбор.</p></section>
+<section><h2>Теория. Зачем кодировать (а не шифровать)</h2><li>Base64/32 не защищают, а <strong>представляют</strong> данные в тексте.</li><li>Нужны для передачи/хранения бинарных данных текстом.</li><li>«Раскрутка» = обратная операция, пока текст читаемый.</li><li>В олимпиадах — наоборот: данные закодированы многократно.</li></section>
+<section><h2>Тема 6.1. Карта теоретических вопросов ВсОШ</h2><li>Порты и протоколы (80/443/22/53...).</li><li>Linux (<code>~</code>, chmod, iptables).</li><li>Браузерная безопасность (CSP/CORS/SOP/HSTS).</li><li>Хеши (SHA-256 = 64 hex).</li><li>Сетевые правила (iptables).</li><li>Криптография (перестановка, Base32/64).</li><li>Угрозы/инциденты (разведка → доступ → закрепление → C2).</li></section>
+<section><h2>Тема 6.1b. Угрозы и инциденты (жизненный цикл)</h2><li>Разведка (recon) → сканирование цели.</li><li>Доступ (exploit) → получение контроля.</li><li>Закрепление (persistence) → удержание доступа.</li><li>C2 / командный центр → управление жертвой.</li><li>В ВсОШ просят восстановить порядок этих фаз.</li></section>
+<section><h2>Тема 6.2. Декодирование Base32/Base64</h2><li>Base64 кодирует в 64 символа; Base32 — в 32.</li><li>Задача ВсОШ «Полимерный контейнер»: данные закодированы НЕ ОДИН раз.</li><pre><code>import base64
+s = input().strip()
+while True:
+    try:
+        s = base64.b32decode(s).decode()
+    except Exception:
+        break
+print(s)</code></pre><li>«Раскрутка» = повторяем, пока не перестанет декодироваться.</li></section>
+<section><h2>Разница алфавитов Base64 и Base32</h2><li>Base64: <code>A–Z a–z 0–9 + /</code> и оконечный <code>=</code>.</li><li>Base32: <code>A–Z 2–7</code> (без <code>0</code>/<code>1</code>/<code>8</code>/<code>9</code>), выравнивание <code>=</code> до кратности 8.</li><li>Как понять, что перед тобой B32: только прописные буквы латиницы и цифры 2–7.</li></section>
+<section><h2>Теория. Как выглядит «раскрутка» на практике</h2><pre><code>import base64
+def unwrap(s):
+    while True:
+        for fn in (base64.b64decode, base64.b32decode):
+            try:
+                s = fn(s).decode(); break
+            except Exception:
+                continue
+        else:
+            break
+    return s</code></pre><li>Пробуем каждый алфавит; если падает (bad padding) — пробуем следующий.</li><li>Как только ни один не декодируется — текст чистый, остановились.</li><li>Защита от вечного цикла: try/except и условие выхода.</li></section>
+<section><h2>ПРАКТИКА А. Раскрутка кодирования</h2><li>Строку закодировать в Base64 → декодировать обратно.</li><li>Двойное кодирование (Base64+Base64) → раскрутить циклом.</li><li>Микс: Base64 затем Base32 → раскрутить, пробуя оба.</li><li>Написать универсальную «раскрутку» с try/except.</li></section>
+<section><h2>Тема 6.3. Формат ответа ВсОШ</h2><li>Ответ-флаг: <code>vsosh{...}</code>. Сдать ровно эту строку — иначе 0 баллов.</li><li>Частая ошибка: лишний пробел/перенос, неверный регистр.</li><li>Всегда убирать <code>.strip()</code>, приводить регистр перед сдачей.</li></section>
+<section><h2>РАЗБОР ФЛАГА. Многослойное кодирование</h2><p>Строка <code>VS{...}</code>-формата: раскручиваем до читаемого.</p><pre><code>import base64
+s = &quot;S05DVUdWS1NJVlBVR1NLUUpCQ1ZFWFpVR0k9PT09PT0=&quot;
+print(unwrap(s))   # сколько слоёв? какой результат?</code></pre><details><summary>Ответ</summary><div class='reveal'><p>1-й слой: Base64 → <code>KNCUGVKSIVPUGSKQJBCVEXZUGI======</code>.</p><p>2-й слой: Base32 → <code>SECURE_CIPHER_42</code>.</p><p>Флаг в формате ВсОШ: <code>vsosh{SECURE_CIPHER_42}</code>.</p></div></details></section>
+<section><h2>ПРАКТИКА Б. Работа с данными (пассивный анализ)</h2><li><code>bytes.fromhex()</code> — восстановить текст из hex.</li><li>Определить тип файла по сигнатуре (<code>%PDF</code>, PNG, ELF...).</li><li><code>strings файл | grep -i flag</code> — поиск секрета.</li><li>Обратный перевод: текст → hex → base64 → вернуть текст.</li></section>
+<section><h2>ПРАКТИКА В. Формат ответа</h2><li>Что отдавать: только строку-флаг, без лишнего.</li><li>Приведи пример <code>vsosh{...}</code> для найденного «послания».</li><li>Как избежать ошибок регистра/пробелов.</li></section>
+<section><h2>Типовые ошибки</h2><li>Бесконечный цикл в «раскрутке» — нужен try/except и защита.</li><li>Путают Base32 (A-Z,2-7) и Base64 (+/ и =).</li><li>Сдают расшифрованное «послание» вместо <code>vsosh{...}</code>.</li><li>Не приводят регистр/не убирают пробелы перед сдачей.</li></section>
+<section><h2>Резюме: что уносим</h2><li>Карта теории ВсОШ: порты, Linux, браузер, хеши, крипто, инциденты.</li><li>Жизненный цикл угрозы: разведка → доступ → закрепление → C2.</li><li>Base32/64: зачем кодировать и как «раскручивать» многослойно.</li><li>Формат ответа — строго <code>vsosh{...}</code> и без лишних символов.</li></section>
+<section><h2>Свяжем с нед. 7</h2><p>Декодирование — работа с данными в тексте. На нед. 7 перейдём к <strong>бинарным</strong></p><p>данным: hex, сигнатуры файлов, <code>strings</code>/<code>binwalk</code>, и к общему анализу <strong>трафика</strong></p><p>в Wireshark. Пассивный анализ из сегодняшней темы станет мостом.</p></section>
+<div class="nav">
+  <button onclick="nav(-1)" aria-label="Назад">&#8592;</button>
+  <span id="pg">1 / 17</span>
+  <button onclick="nav(1)" aria-label="Вперёд">&#8594;</button>
+</div>
+<script src="../slide.js"></script>
+</body>
+</html>

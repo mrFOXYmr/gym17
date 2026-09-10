@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Неделя 8 · ВсОШ школьный этап (21.10.2026)</title>
+<link rel="stylesheet" href="../slide.css">
+</head>
+<body>
+<section><h1>Неделя 8 · ВсОШ школьный этап (21.10.2026)</h1></section>
+<section><h2>План занятия (репетиция)</h2><li><strong>Повтор теории</strong>: порты, Linux, браузер, хеши, атаки.</li><li><strong>Практика</strong>: декодирование и файлы на время.</li><li><strong>Пробный этап</strong> на время, оформление <code>vsosh{...}</code>.</li><li><strong>Разбор</strong> ошибок и стратегия прохождения.</li></section>
+<section><h2>На прошлой неделе → сегодня</h2><p>Мы прошли всю теорию и практику ВсОШ (нед. 2–6) и работу с файлами/трафиком</p><p>(нед. 7). Сегодня — генеральная репетиция перед реальным школьным этапом.</p><p>Метод тот же: повторили → потренировались → написали пробный → разобрали.</p></section>
+<section><h2>Теория (повтор). Почему начинать с лёгкого</h2><li>Лёгкие задания дают надёжные баллы быстро.</li><li>Сложные не имеют тайм-пенальти: к ним можно вернуться.</li><li>Пропускать «застрявшее» на</li></section>
+<section><h2>Блок 1. Быстрый повтор теории</h2><li>Порты: HTTP=80, HTTPS=443, SSH=22, DNS=53, MySQL=3306.</li><li>Linux: <code>~</code> (домашняя), chmod 755, iptables.</li><li>Браузер: CSP (запрет JS), SOP/CORS/HSTS.</li><li>Хеши: SHA-256 = 64 hex.</li><li>Крипто: перестановка, Base32/64, раскрутка.</li><li>Атаки по трафику: SQLi/LDAPi/Command.</li></section>
+<section><h2>Повтор: порты и протоколы</h2><li>21 FTP, 22 SSH, 25 SMTP, 53 DNS, 80 HTTP.</li><li>443 HTTPS, 3306 MySQL, 5432 PostgreSQL, 3000/8080 dev.</li><li>Уметь мгновенно называть порт и наоборот.</li></section>
+<section><h2>Повтор: браузерная безопасность</h2><li>SOP — правило по умолчанию (запрет).</li><li>CORS — явное разрешение кросс-доменных запросов.</li><li>CSP — whitelist источников JS (защита от XSS).</li><li>HSTS — принудительный HTTPS.</li></section>
+<section><h2>Повтор: атаки по трафику</h2><li>SQLi: <code>&#x27; or &#x27;1&#x27;=&#x27;1</code>, <code>union select</code>.</li><li>LDAPi: <code>*)(&amp;(</code>.</li><li>Command: <code>; ls</code>, <code>sleep(</code>, <code>$(cat ...)</code>.</li><li>XSS: <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>.</li></section>
+<section><h2>ПРАКТИКА А. Декодирование на время</h2><li>Раскрутить однострочник: Base64 → Base32 (цикл с try/except).</li><li>Из hex-строки прочитать текст.</li><li>В файле найти «флаг» через <code>strings | grep</code>.</li><li>Формат ответа: записать всё как <code>vsosh{...}</code>.</li></section>
+<section><h2>Универсальная «раскрутка» (написать с нуля)</h2><pre><code>import base64
+
+def unwrap(s: str) -&gt; str:
+    while True:
+        for fn in (base64.b64decode, base64.b32decode, base64.b16decode):
+            try:
+                s = fn(s.encode() if isinstance(s, str) else s).decode()
+                break
+            except Exception:
+                continue
+        else:
+            break
+    return s</code></pre><blockquote>Тренировка: воспроизвести эту функцию по памяти.</blockquote></section>
+<section><h2>ПРОБНЫЙ ШКОЛЬНЫЙ ЭТАП (на время)</h2><p>Взять прошлогодний школьный этап (<code>ВсОШ/2024-25/школьный-10-11</code> и <code>9</code>).</p><p>Решение на время, оформление строго в <code>vsosh{...}</code>.</p><p>Система как на реальном этапе: время ограничено, баллы за верные флаги.</p></section>
+<section><h2>Стратегия прохождения реального этапа</h2><li>Затем Wireshark/файлы (можно вернуться).</li><li>Не застревать: если задача стоит</li><li>Ответы копировать точно, без лишнего.</li></section>
+<section><h2>Типовые ошибки оформления (разбор)</h2><li>Лишний пробел/перенос в формате <code>vsosh{...}</code>.</li><li>Неверный регистр — сравнивать с образцом флага.</li><li>Сдают «сырой» ответ вместо флага-строки.</li><li><code>.strip()</code> обязателен перед сдачей.</li></section>
+<section><h2>Резюме: что уносим</h2><li>Полный репетиционный прогон формата ВсОШ.</li><li>Знание своих слабых мест: теория / декодирование / файлы / трафик.</li><li>Стратегия: лёгкое первым, не застревать, точный формат флага.</li></section>
+<section><h2>Свяжем с нед. 9</h2><p>После школьного этапа переходим в практическую плоскость следующего тура:</p><p><strong>Linux для атакующего и nmap</strong>. Разведка сети — первый шаг любого кейса</p><p>(НТО Этап II, Innopolis тур2). Та же схема: теория → практика → разбор.</p></section>
+<div class="nav">
+  <button onclick="nav(-1)" aria-label="Назад">&#8592;</button>
+  <span id="pg">1 / 15</span>
+  <button onclick="nav(1)" aria-label="Вперёд">&#8594;</button>
+</div>
+<script src="../slide.js"></script>
+</body>
+</html>

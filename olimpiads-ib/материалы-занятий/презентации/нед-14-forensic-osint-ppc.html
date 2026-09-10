@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Неделя 14 · FORENSIC, OSINT и PPC</title>
+<link rel="stylesheet" href="../slide.css">
+</head>
+<body>
+<section><h1>Неделя 14 · FORENSIC, OSINT и PPC</h1></section>
+<section><h2>План занятия</h2><li><strong>Теория</strong>: FORENSIC — анализ файлов: file/strings/binwalk.</li><li><strong>Теория</strong>: OSINT — построение цепочки фактов.</li><li><strong>Теория</strong>: PPC — автоматизация данных на Python.</li><li><strong>Практика</strong>: таски всех трёх категорий + разбор.</li></section>
+<section><h2>На прошлой неделе → сегодня</h2><p>До сих пор углублялись в отдельные категории (CRYPTO на нед. 13). Сегодня —</p><p><strong>три категории сразу</strong> для широкой практики Innopolis тур1: FORENSIC, OSINT,</p><p>PPC. Единая схема: данные → категория → инструмент → флаг.</p></section>
+<section><h2>Теория. Принцип FORENSIC-подхода</h2><li>Сначала определить тип файла — это диктует инструмент.</li><li><code>strings</code> — быстрые читаемые строки; <code>binwalk</code> — вшитые архивы/файлы.</li><li>Метаданные (EXIF) — скрытые поля: автор, GPS, комментарий.</li><li>Часто флаг «зашит» в скрытой области, невидимой обычным текстом.</li></section>
+<section><h2>Тема 14.1. FORENSIC — анализ файлов и памяти</h2><p>Приёмы:</p><pre><code>file mystery        # тип файла
+strings mystery | grep -i flag
+xxd mystery | head  # hex-взгляд
+binwalk mystery     # вшитые файлы/архивы</code></pre><p>Что ищем: скрытые данные, метаданные, стеганографию, EXIF.</p></section>
+<section><h2>FORENSIC: порядок действий</h2><li>Определить тип файла (<code>file</code>).</li><li>Прочитать строки (<code>strings</code>) — быстрый поиск флага.</li><li>Посмотреть вшитые архивы (<code>binwalk</code>).</li><li>Метаданные/EXIF.</li><li>Иногда — hex-анализ (<code>xxd</code>).</li></section>
+<section><h2>ПРАКТИКА А. FORENSIC</h2><li><code>file</code> — определи тип учебного файла.</li><li><code>strings | grep flag</code> — найди секрет.</li><li><code>binwalk</code> — вшитые архивы.</li><li>Метаданные (EXIF) картинки — что прочитать?</li><p>Цель — добыть «флаг/секрет».</p></section>
+<section><h2>Тема 14.2. OSINT — открытые источники</h2><li>По подсказкам искать информацию в открытых данных.</li><li>Источники: поиск, соцсети, профили, метаданные, карты.</li><li>Алгоритм: собрать все «хвосты» → связать → найти флаг.</li></section>
+<section><h2>OSINT: цепочка фактов</h2><li>Один факт (ник) → профиль.</li><li>Профиль → город/даты/первые посты.</li><li>Метаданные медиа → где снималось.</li><li>Связываем → искомый секрет/флаг.</li><li>План ДО поиска экономит время и не даёт увестись в сторону.</li></section>
+<section><h2>ПРАКТИКА Б. OSINT (упражнение на логику)</h2><li>Взять гипотезу: «ник + город». Составить план поиска.</li><li>Определить 3 источника и что из них взять.</li><li>Собрать цепочку фактов к флагу (учебная задача).</li><p>Без реальных атак — только моделирование.</p></section>
+<section><h2>Тема 14.3. PPC — программирование для данных</h2><p>Автоматизировать обработку большого объёма (логи, трафик).</p><pre><code>from collections import Counter
+ips = [...]
+print(Counter(ips).most_common(3))</code></pre></section>
+<section><h2>ПРАКТИКА В. PPC (Python)</h2><li>Прочитать лог, собрать все IP через regex.</li><li>Посчитать количество запросов на IP (Counter).</li><li>Вывести топ-3.</li><li>Повторяющиеся шаги — оформить как функцию.</li><p>Это типичная задача для PPC в CTF и данных НТО.</p></section>
+<section><h2>РАЗБОР ФЛАГА. Топ-IP по логу</h2><p>По логу выше: какой IP самый частый, какой — публичный?</p><details><summary>Ответ</summary><div class='reveal'><p>Самый частый: <code>192.168.1.10</code> (3 раза), публичный: <code>8.8.8.8</code> (1 раз).</p><p>Флаг-формат: <code>PPC{&lt;частый&gt;-&lt;публичный&gt;}</code> → <code>PPC{192.168.1.10-8.8.8.8}</code>.</p></div></details></section>
+<section><h2>Теория. Почему PPC = «написать скрипт, а не кликать руками»</h2><li>Данных много: логи, трафик, тысячи строк.</li><li>Ручной подсчёт медленный и с ошибками.</li><li>Скрипт (regex + <code>Counter</code>) решает за секунды и воспроизводим.</li><li>PPC в олимпиадах — проверка именно этой автоматизации.</li></section>
+<section><h2>Тема 14.4. Связь категорий с олимпиадам</h2><li>PPC — НТО (программирование) и Innopolis/CTF.</li><li>FORENSIC/OSINT — широко в Innopolis отбор-тур1.</li><li>ВсОШ практика (файлы) также близка к FORENSIC.</li><li>FORENSIC ≠ REVERSE: первый про данные/файлы, второй про исполняемые.</li></section>
+<section><h2>Практический мини-турнир</h2><p>Таски отбор-тур1 Innopolis (FORENSIC + OSINT + PPC) на время.</p></section>
+<section><h2>Типовые ошибки</h2><li>В FORENSIC не смотрят strings/binwalk — пропускают спрятанное.</li><li>В OSINT бросаются на поиск без чёткого плана.</li><li>В PPC делают вручную, а не скриптом.</li><li>Путают FORENSIC и REVERSE.</li></section>
+<section><h2>Резюме: что уносим</h2><li>FORENSIC: file → strings → binwalk → EXIF; принцип «тип задаёт инструмент».</li><li>OSINT: план → источники → цепочка фактов → флаг.</li><li>PPC: regex + <code>Counter</code> для автоматизации больших данных.</li><li>Различие FORENSIC (данные) и REVERSE (исполняемые).</li></section>
+<section><h2>Свяжем с нед. 15</h2><p>Из прикладных категорий — к <strong>письменному формату Верченко</strong>: анализ сети,</p><p>оптимизация, контрольные суммы. Те же приёмы перебора/жадности/аккуратности.</p><p>После нед. 15 соберём итоговую карту всех 4 олимпиад.</p></section>
+<div class="nav">
+  <button onclick="nav(-1)" aria-label="Назад">&#8592;</button>
+  <span id="pg">1 / 19</span>
+  <button onclick="nav(1)" aria-label="Вперёд">&#8594;</button>
+</div>
+<script src="../slide.js"></script>
+</body>
+</html>

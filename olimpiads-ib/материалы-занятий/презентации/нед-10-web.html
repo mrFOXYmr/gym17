@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Неделя 10 · Web-уязвимости (LFI, SQLi, SSTI)</title>
+<link rel="stylesheet" href="../slide.css">
+</head>
+<body>
+<section><h1>Неделя 10 · Web-уязвимости (LFI, SQLi, SSTI)</h1></section>
+<section><h2>План занятия</h2><li><strong>Теория</strong>: как работает web-запрос, где живут уязвимости.</li><li><strong>Теория</strong>: LFI, SQLi, SSTI, Race — механика и признаки.</li><li><strong>Практика</strong>: payload и разбор флагов НТО/Иннополис.</li><li><strong>Мини-турнир</strong>: 3 web-таска из архива.</li></section>
+<section><h2>На прошлой неделе → сегодня</h2><p>На нед. 9 nmap показал, какие веб-порты открыты. Теперь — <strong>что с ними делать</strong>:</p><p>эксплуатация. Web — самая частaя площадка CTF-тасков, и это прямое продолжение</p><p>разведки. Схема занятия: теория → практика → разбор.</p></section>
+<section><h2>Теория. Где живут web-уязвимости</h2><li>Приложение обрабатывает <strong>пользовательский ввод</strong> (параметры, body, header).</li><li>Если ввод попадает в файловую систему (LFI), в SQL-запрос (SQLi),</li><p>в шаблон (SSTI) или в параллельную операцию (Race) — это уязвимость.</p><li>Главное: понять, <strong>куда</strong> уходит ввод, и сломать именно ту логику.</li></section>
+<section><h2>Тема 10.1. Local File Include (LFI)</h2><p>Через параметр читают файлы сервера.</p><pre><code>http://&lt;ip&gt;/...?file=config.js
+http://&lt;ip&gt;/...?file=/etc/passwd</code></pre><p>Зачем: раскрыть конфиг/исходник → найти ключ/флаг.</p><p>Разбор образца Innopolis: маршрут <code>/profile</code> в <code>app.js</code> содержит LFI.</p></section>
+<section><h2>LFI vs RFI</h2><li><strong>LFI</strong> — подключаем локальный файл сервера.</li><li><strong>RFI</strong> — удалённое включение (загрузка внешнего файла/скрипта).</li><li>LFI чаще встречается в олимпиадах; RFI требует включения URL.</li></section>
+<section><h2>ПРАКТИКА А. LFI-запросы</h2><li>Сформулировать запрос для чтения <code>/etc/passwd</code>.</li><li>Прочитать <code>config.js</code> через LFI.</li><li>Почему важно читать именно <code>config.js</code> (конфиг приложения).</li><li>Разница LFI и RFI.</li></section>
+<section><h2>Тема 10.2. SQL injection</h2><p>Манипуляция параметра, чтобы изменить/обойти запрос.</p><li>«Вход без пароля»: <code>username=admin&amp;password[password]=1</code> (НТО «Baby node»).</li><li><code>&#x27; or &#x27;1&#x27;=&#x27;1&#x27; --</code> — классика.</li><p>Признаки SQLi: магический логин, аномальные параметры, ошибки БД.</p></section>
+<section><h2>Как защищает prepared statement</h2><li>Значения передаются отдельно от SQL-кода.</li><li>Ввод не интерпретируется как часть запроса → инъекция невозможна.</li><li>«prepare_your_statements_properly» — намёк на параметризацию.</li></section>
+<section><h2>ПРАКТИКА Б. Признаки SQLi</h2><li>Распознать SQLi по строке (что здесь «магия»?).</li><li>Как защищает prepared statement.</li><li>Придумать простой пример обхода.</li><p>Таблицы и примеры — из <code>НТО/2022-2023/infbez-отбор-тур2</code>.</p></section>
+<section><h2>Теория. Механика SQLi</h2><li>Запрос строит строку с подстановкой ввода: <code>WHERE user = &#x27;...&#x27;</code>.</li><li>Ввод <code>&#x27; or &#x27;1&#x27;=&#x27;1&#x27; --</code> закрывает кавычку и «вешает» вечно-истинное условие.</li><li><code>--</code>/<code>#</code> комментирует остаток запроса.</li><li>Результат: обход логина, чтение таблиц, иногда запись.</li><li>Защита от этой механики — prepared statement (параметризация).</li></section>
+<section><h2>Тема 10.3. Template injection (SSTI) — НТО «X-Forwarded-For»</h2><pre><code>X-Forwarded-For: 1, {{ config }}</code></pre><p>→ сервер отработал шаблон и вернул флаг <code>NTO{Da_n3_localhost_...}</code>.</p><p>Когда это возможно: пользовательский ввод попадает в шаблонизатор (Jinja2/Flask).</p></section>
+<section><h2>SSTI vs XSS</h2><li><strong>XSS</strong> — код исполняется в браузере жертвы.</li><li><strong>SSTI</strong> — ввод исполняется на СЕРВЕРЕ в шаблонизаторе.</li><li>Тест SSTI: <code>{{7*7}}</code> → если вернёт <code>49</code>, есть template injection.</li></section>
+<section><h2>ПРАКТИКА В. Признаки SSTI</h2><li>Что полезно узнать про Flask/Node перед атакой?</li><li>Как понять, что есть template injection? (<code>{{ }}</code> отработает)</li><li>Чем SSTI отличается от XSS?</li><li>Разобрать реальный флаг из архива.</li></section>
+<section><h2>Тема 10.4. Race Condition</h2><p>Гонка при параллельных запросах (НТО «BLOCKchain»).</p><li>Одновременные запросы → несогласованное состояние → флаг.</li><li>Признак: операции зависят от «проверки-и-действия» без синхронизации.</li><li>Эксплуатация: множество параллельных запросов (Burp Intruder, скрипт).</li></section>
+<section><h2>Общий алгоритм решения web-таска</h2><li>Зайти, осмотреть (исходник, JS, /robots.txt).</li><li>Определить технологию (Flask/Node/Express).</li><li>Проверить простые уязвимости: LFI, SQLi, комментарии, дефолтные доступы.</li><li>Искать флаг в ответе.</li><li>При необходимости — автоматизировать повтор (Python, burp).</li></section>
+<section><h2>РАЗБОР ФЛАГА. SSTI через X-Forwarded-For</h2><p>Тест: отправить заголовок с шаблоном и проверить отклик.</p><pre><code>curl -H &quot;X-Forwarded-For: 1, {{ 7*7 }}&quot; http://&lt;ip&gt;/
+# если в ответе &quot;49&quot; — есть SSTI</code></pre><details><summary>Ответ</summary><div class='reveal'><p><code>{{7*7}}</code> → <code>49</code> подтверждает template injection.</p><p>Дальше: <code>{{ config }}</code> в X-Forwarded-For → видим <code>SECRET_KEY</code>.</p><p>Флаг-формат: <code>NTO{...}</code> — ищем в отрендеренном шаблоне.</p></div></details></section>
+<section><h2>Практический мини-турнир</h2><p>Разбор 3 web-тасков из архива НТО (отбор-тур2 и финал):</p><li>SSTI-X-Forwarded-For (1 шаг).</li><li>Node/SQLi «Baby node» (1 шаг).</li><li>Race condition «BLOCKchain» (1 шаг).</li></section>
+<section><h2>Типовые ошибки</h2><li>Путают LFI и SSTI.</li><li>В SQLi забывают про prepared statement (не всегда = инъекция).</li><li>Не определяют технологию → неверный вектор.</li><li>В гонках не используют параллельные запросы.</li></section>
+<section><h2>Резюме: что уносим</h2><li>Уязвимости живут там, куда уходит пользовательский ввод.</li><li>LFI, SQLi, SSTI, Race: механика, признаки, примеры.</li><li>Prepared statement — защита от SQLi.</li><li>Алгоритм web-таска: осмотр → технология → простые уязвимости → флаг.</li></section>
+<section><h2>Свяжем с нед. 11</h2><p>Мы умеем разведывать (нед. 9) и эксплуатировать web (нед. 10). Теперь</p><p>объединим это в <strong>командный кейс НТО Этап II</strong>: разведка + атака + крипто +</p><p>отчёт за ограниченное время. Схема занятия — это мини-игра по реальному формату.</p></section>
+<div class="nav">
+  <button onclick="nav(-1)" aria-label="Назад">&#8592;</button>
+  <span id="pg">1 / 21</span>
+  <button onclick="nav(1)" aria-label="Вперёд">&#8594;</button>
+</div>
+<script src="../slide.js"></script>
+</body>
+</html>

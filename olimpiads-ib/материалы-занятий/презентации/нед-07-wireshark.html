@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Неделя 7 · Файлы, hex и Wireshark (анализ трафика)</title>
+<link rel="stylesheet" href="../slide.css">
+</head>
+<body>
+<section><h1>Неделя 7 · Файлы, hex и Wireshark (анализ трафика)</h1></section>
+<section><h2>План занятия</h2><li><strong>Теория</strong>: hex, сигнатуры файлов, как «читать» байты.</li><li><strong>Теория</strong>: поиск флага — file/strings/binwalk.</li><li><strong>Теория</strong>: Wireshark и <code>.pcap</code>, типичные инъекции.</li><li><strong>Практика</strong>: hex, поиск в файле, анализ трафика.</li><li><strong>Разбор</strong>: «Сетевая аномалия» из ВсОШ.</li></section>
+<section><h2>На прошлой неделе → сегодня</h2><p>На нед. 6 мы раскручивали текстовое кодирование. Сегодня заглубляемся в</p><p><strong>бинарные</strong> данные: hex, сигнатуры и <strong>трафик</strong>. Это завершает подготовку</p><p>к школьному этапу ВсОШ (21.10) — последний блок перед репетицией.</p></section>
+<section><h2>Теория. Что такое hex и зачем</h2><li>Один байт = 2 шестнадцатеричные цифры (0–9, a–f).</li><li>Любой файл — это последовательность байтов.</li><li><code>45 00 00...</code> — байты IP-пакета; <code>48 65 6c</code> — &quot;Hel&quot;.</li><li>hex позволяет увидеть «сырые» данные, которые не видны как текст.</li></section>
+<section><h2>Тема 7.1. Форматы данных и hex</h2><li><code>.diff</code> — файл различий/патч; в ВсОШ хранит закодированное послание.</li><li>hex-представление: каждый байт = 2 hex-символа.</li><pre><code>print(bytes.fromhex(&#x27;4e544f&#x27;).decode())  # hex -&gt; «NTO»
+print(&#x27;NTO&#x27;.encode().hex())              # «NTO» -&gt; hex</code></pre></section>
+<section><h2>Сигнатуры файлов (магические байты)</h2><table><thead><tr><th>Тип</th><th>Первые байты</th></tr></thead><tbody><tr><td>PDF</td><td><code>%PDF</code></td></tr><tr><td>PNG</td><td><code>\x89PNG</code></td></tr><tr><td>ELF</td><td><code>\x7fELF</code></td></tr><tr><td>ZIP</td><td><code>PK\x03\x04</code></td></tr><tr><td>JPEG</td><td><code>\xff\xd8\xff</code></td></tr></tbody></table><li>По первым байтам определяем тип — это начало любого FORENSIC.</li></section>
+<section><h2>ПРАКТИКА А. Hex и восстановление</h2><li><code>bytes.fromhex(&#x27;48656c6c6f&#x27;)</code> — что это? (Hello)</li><li>Перевести своё имя в hex и обратно.</li><li>Определить тип файла по первым байтам (сигнатуре).</li><li>Прочитать hex-закодированную строку.</li></section>
+<section><h2>Тема 7.2. Чтение файлов и поиск флага</h2><p>Утилиты: <code>file</code>, <code>xxd</code>, <code>strings</code>, <code>binwalk</code>.</p><pre><code>file mystery
+strings mystery | grep -i flag
+xxd mystery | head
+binwalk mystery      # вшитые файлы/архивы</code></pre></section>
+<section><h2>ПРАКТИКА Б. Поиск «секрета» в файле</h2><li><code>file mystery</code> — тип.</li><li><code>strings mystery | grep -i flag</code> — читаемые строки.</li><li><code>binwalk mystery</code> — вшитые архивы.</li><li>Метаданные (EXIF для картинок) — что прочитать.</li></section>
+<section><h2>Тема 7.3. Wireshark и `.pcap`</h2><p>Задание ВсОШ «Сетевая аномалия» (<code>traffic_*.pcap</code>): найти атаку по записи.</p><p>Алгоритм:</p><li>Открыть <code>.pcap</code> (File → Open).</li><li>Применить фильтры <code>http</code>, <code>dns</code>, <code>mysql</code>.</li><li>Искать подозрительные параметры: <code>&#x27; or &#x27;1&#x27;=&#x27;1</code>, <code>; ls</code>, <code>sleep(</code>.</li><li>Определить тип: SQL/LDAP/Command injection.</li></section>
+<section><h2>ПРАКТИКА В. Просмотр трафика</h2><li>Фильтр <code>http</code> — сколько запросов?</li><li>Follow → TCP Stream: найти параметры запроса.</li><li>Найти аномалию: подозрительную строку в параметрах.</li><li>Сформулировать тип атаки (SQLi / LDAPi / Command/...).</li></section>
+<section><h2>Признаки типов атак (для определения по трафику)</h2><li><strong>SQL injection</strong>: <code>&#x27; or &#x27;1&#x27;=&#x27;1</code>, <code>--</code>, <code>union select</code>.</li><li><strong>LDAP injection</strong>: <code>*)(&amp;(</code>, <code>(|(uid=*</code>.</li><li><strong>Command injection</strong>: <code>; ls</code>, <code>; id</code>, <code>$(cat /etc/passwd)</code>, <code>sleep 5</code>.</li><li><strong>XSS</strong>: <code>&lt;script&gt;</code>, <code>alert(1)</code>.</li></section>
+<section><h2>Теория. Механика типов инъекций</h2><li><strong>SQLi</strong>: внедряют SQL в параметр → меняют запрос (обход логина, чтение БД).</li><li><strong>LDAPi</strong>: ломают фильтр каталога (<code>*</code>/<code>|(</code>-синтаксис) → доступ к записям.</li><li><strong>Command injection</strong>: вставляют команду ОС (<code>; ls</code>) → выполнение команд.</li><li><strong>XSS</strong>: вставляют JS → он исполняется в браузере жертвы.</li><li>Отличие в синтаксисе параметра — главный ключ к определению по трафику.</li></section>
+<section><h2>Практика В2. Определи атаку по признаку</h2><li><code>?user=&#x27; or &#x27;1&#x27;=&#x27;1&#x27; --</code> → SQLi.</li><li><code>?file=;cat flag.txt</code> → Command injection.</li><li><code>&lt;script&gt;alert(1)&lt;/script&gt;</code> → XSS.</li><li><code>*)(uid=*)(|(uid=*</code> → LDAPi.</li></section>
+<section><h2>РАЗБОР ФЛАГА. Определение атаки</h2><p>Определи тип атаки по синтаксису параметра:</p><li><code>&#x27; or &#x27;1&#x27;=&#x27;1&#x27; --</code> → ?</li><li><code>$(cat /etc/passwd)</code> → ?</li><li><code>&lt;script&gt;alert(1)&lt;/script&gt;</code> → ?</li><details><summary>Ответ</summary><div class='reveal'><li><code>&#x27; or &#x27;1&#x27;=&#x27;1&#x27; --</code> → SQL injection.</li><li><code>$(cat /etc/passwd)</code> → Command injection.</li><li><code>&lt;script&gt;alert(1)&lt;/script&gt;</code> → XSS.</li><p>Формат ответа ВсОШ — «название типа атаки», например <code>vsosh{sql_injection}</code>.</p></div></details></section>
+<section><h2>Тема 7.4. Пассивный анализ (ВсОШ)</h2><p>Файл reve… — декодировать/восстановить информацию.</p><p>Идея: посмотреть структуру → понять кодирование → раскрутить.</p></section>
+<section><h2>Типовые ошибки</h2><li>Забывают <code>strings | grep</code> (нужен пайп).</li><li>В Wireshark смотрят не тот поток (не Follow правильной сессии).</li><li>Не различают SQLi и LDAPi по синтаксису.</li><li>Сдают тип атаки без обоснования — всегда доказываем.</li></section>
+<section><h2>Резюме: что уносим</h2><li>hex и сигнатуры файлов; чтение «сырых» данных.</li><li>Конвейер поиска: file → strings → binwalk → EXIF.</li><li>Wireshark: фильтры, Follow TCP Stream, поиск аномалий.</li><li>Определение типа атаки по синтаксису параметра.</li></section>
+<section><h2>Свяжем с нед. 8</h2><p>Всё, что изучили (теория + декодирование + файлы + трафик), — это и есть</p><p>формат школьного этапа ВсОШ. На нед. 8 проведём <strong>полную репетицию</strong>:</p><p>пробный этап на время и разбор ошибок. Схема «теория → практика → разбор»</p><p>теперь покрывает весь школьный формат.</p></section>
+<div class="nav">
+  <button onclick="nav(-1)" aria-label="Назад">&#8592;</button>
+  <span id="pg">1 / 19</span>
+  <button onclick="nav(1)" aria-label="Вперёд">&#8594;</button>
+</div>
+<script src="../slide.js"></script>
+</body>
+</html>
