@@ -1,0 +1,2430 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кодировки в CTF — Модуль Priority 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e1a; --bg-card:#11161f; --bg-code:#161b22; --border:#30363d; --border-soft:#21262d;
+  --text:#e6edf3; --text-muted:#8b949e; --text-dim:#6e7681;
+  --violet:#7c3aed; --violet-soft:#a78bfa; --cyan:#22d3ee; --cyan-soft:#67e8f9;
+  --green:#3fb950; --amber:#d29922; --red:#f85149;
+  --kw:#ff7b72; --str:#a5d6ff; --num:#79c0ff; --com:#8b949e; --fn:#d2a8ff;
+}
+html,body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+.deck-wrapper{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.deck{width:1280px;height:720px;position:relative;transform:scale(var(--scale,1));transform-origin:center center;flex-shrink:0;background:var(--bg)}
+.slide{position:absolute;inset:0;padding:54px 64px 48px;opacity:0;pointer-events:none;transition:opacity .35s ease;overflow:hidden;display:flex;flex-direction:column;background:var(--bg)}
+.slide.active{opacity:1;pointer-events:auto}
+.slide::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--violet),var(--cyan));opacity:.7}
+.corner-mark{position:absolute;top:18px;right:24px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:.1em;display:flex;align-items:center;gap:6px}
+.corner-mark .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+h1{font-size:46px;font-weight:800;line-height:1.05;letter-spacing:-.025em;margin-bottom:14px}
+h2{font-size:30px;font-weight:700;line-height:1.15;letter-spacing:-.01em;margin-bottom:16px}
+h3{font-size:20px;font-weight:600;line-height:1.3;margin-bottom:8px}
+h4{font-size:16px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+p{font-size:17px;line-height:1.55;color:var(--text);margin-bottom:10px}
+li{font-size:16px;line-height:1.5;margin-bottom:6px}
+ul,ol{padding-left:22px;margin-bottom:10px}
+.accent-v{color:var(--violet-soft)} .accent-c{color:var(--cyan)} .accent-v-strong{color:var(--violet)}
+.muted{color:var(--text-muted)} .dim{color:var(--text-dim)}
+.lead{font-size:18px;color:var(--text-muted);line-height:1.5}
+strong{color:var(--text);font-weight:600}
+code.inline{font-family:'JetBrains Mono',monospace;font-size:.88em;background:var(--bg-code);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--cyan-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.5;color:var(--text);margin-bottom:10px}
+pre code{font-family:inherit;font-size:inherit;background:none;border:none;padding:0;color:inherit}
+pre.compact{padding:10px 14px;font-size:12px;line-height:1.45}
+pre.scroll{max-height:280px;overflow:auto}
+.kw{color:var(--kw)} .str{color:var(--str)} .num{color:var(--num)} .com{color:var(--com);font-style:italic} .fn{color:var(--fn)}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:10px}
+.card-tight{padding:12px 14px}
+.badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-right:8px;vertical-align:middle}
+.badge-easy{background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.4)}
+.badge-medium{background:rgba(210,153,34,.12);color:var(--amber);border:1px solid rgba(210,153,34,.4)}
+.badge-hard{background:rgba(248,81,73,.12);color:var(--red);border:1px solid rgba(248,81,73,.4)}
+.callout{background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(34,211,238,.05));border:1px solid rgba(124,58,237,.3);border-left:3px solid var(--violet);border-radius:6px;padding:12px 16px;margin:8px 0;font-size:15px;line-height:1.5}
+.callout-cyan{border-left-color:var(--cyan);background:linear-gradient(135deg,rgba(34,211,238,.08),rgba(124,58,237,.04));border-color:rgba(34,211,238,.3)}
+table{border-collapse:collapse;width:100%;font-size:14px;margin-bottom:10px}
+th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--bg-code);color:var(--cyan);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+td code{font-family:'JetBrains Mono',monospace;color:var(--cyan-soft);font-size:13px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;min-height:0}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;flex:1;min-height:0}
+.col{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:10px 0}
+.stat{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:left}
+.stat-num{font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--violet-soft);line-height:1;margin-bottom:6px}
+.stat-num.cyan{color:var(--cyan)}
+.stat-num.green{color:var(--green)}
+.stat-label{font-size:13px;color:var(--text-muted);line-height:1.4}
+.task-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.task-card .task-num{font-size:13px;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+.task-card .task-title{font-size:15px;font-weight:600;line-height:1.35}
+.task-card pre{margin:4px 0 0;font-size:11px;padding:8px 10px;max-height:160px;overflow:auto}
+.arrow{color:var(--cyan);font-family:'JetBrains Mono',monospace}
+.diagram-a{font-size:120px;font-weight:800;color:var(--violet-soft);text-align:center;line-height:1;font-family:'JetBrains Mono',monospace}
+.binary-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:.06;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.3;color:var(--cyan);white-space:pre-wrap;word-break:break-all;padding:20px}
+.section-divider{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;height:100%;padding:0 20px}
+.section-big{font-size:88px;font-weight:800;letter-spacing:-.03em;line-height:1;background:linear-gradient(135deg,var(--violet-soft),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:12px}
+.ascii-range{display:inline-block;padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;margin:2px}
+.r-grey{background:rgba(139,148,158,.15);color:var(--text-muted)}
+.r-green{background:rgba(63,185,80,.15);color:var(--green)}
+.r-blue{background:rgba(34,211,238,.12);color:var(--cyan)}
+.r-violet{background:rgba(124,58,237,.15);color:var(--violet-soft)}
+.r-amber{background:rgba(210,153,34,.12);color:var(--amber)}
+.progress-track{position:fixed;top:0;left:0;width:100%;height:3px;background:var(--border);z-index:100}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));width:0%;transition:width .35s ease}
+.slide-counter{position:fixed;top:14px;right:20px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);z-index:100;background:rgba(10,14,26,.8);padding:4px 10px;border-radius:4px;border:1px solid var(--border)}
+.nav-btn{position:fixed;bottom:20px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;z-index:100;transition:all .15s}
+.nav-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.notes-btn{right:20px} .fs-btn{right:120px}
+.notes-panel{position:fixed;top:0;right:0;width:440px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border);transform:translateX(100%);transition:transform .3s ease;z-index:200;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.4)}
+.notes-panel.open{transform:translateX(0)}
+.notes-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--bg-code)}
+.notes-header h3{font-size:15px;color:var(--cyan);margin:0}
+.notes-close{background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;padding:0 4px;line-height:1}
+.notes-close:hover{color:var(--text)}
+.notes-body{padding:18px;overflow-y:auto;font-size:13.5px;line-height:1.65;color:var(--text);flex:1}
+.notes-body p{margin-bottom:10px;font-size:13.5px;line-height:1.65}
+.notes-body strong{color:var(--cyan)}
+.notes-body .nlabel{color:var(--violet-soft);font-weight:600;display:block;margin-top:12px;margin-bottom:4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.speaker-notes{display:none}
+.slide-content{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.step-list{counter-reset:step;list-style:none;padding-left:0}
+.step-list li{counter-increment:step;position:relative;padding-left:30px;margin-bottom:8px;font-size:14px;line-height:1.5}
+.step-list li::before{content:counter(step);position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:var(--violet);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
+.tip-box{background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:10px 14px;margin:8px 0;font-size:13px;line-height:1.5}
+.tip-box .tip-h{color:var(--cyan);font-weight:600;display:block;margin-bottom:4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.hex-grid{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.4;color:var(--text-dim);word-break:break-all}
+.link-list{list-style:none;padding:0}
+.link-list li{padding:10px 0;border-bottom:1px solid var(--border-soft);font-size:14px}
+.link-list li:last-child{border-bottom:none}
+.link-list a{color:var(--cyan);text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:13px}
+.link-list a:hover{text-decoration:underline}
+.bf-output{font-family:'JetBrains Mono',monospace;color:var(--green);font-size:14px;padding:6px 10px;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.3);border-radius:4px;display:inline-block;margin:4px 0}
+ details summary{cursor:pointer;color:var(--cyan);font-size:13px;padding:4px 0}
+details summary:hover{text-decoration:underline}
+@media print{
+  .progress-track,.slide-counter,.nav-btn,.notes-panel{display:none!important}
+  html,body{overflow:visible;height:auto;background:#fff}
+  .deck-wrapper{display:block;height:auto;width:100%}
+  .deck{transform:none;width:100%;height:auto;background:#fff}
+  .slide{position:relative;opacity:1;pointer-events:auto;page-break-after:always;min-height:1000px;background:#0a0e1a;color:var(--text);padding:40px 50px}
+  .slide.active{opacity:1}
+  .speaker-notes{display:block!important;margin-top:20px;padding:16px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:12px;line-height:1.5}
+  .speaker-notes::before{content:'📝 Заметки преподавателя:';display:block;color:#22d3ee;font-weight:600;margin-bottom:8px;font-size:13px}
+  pre{overflow:visible;white-space:pre-wrap;word-break:break-word}
+}
+</style>
+</head>
+<body>
+<div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+<div class="slide-counter" id="counter">01 / 44</div>
+<button class="nav-btn fs-btn" id="fsBtn" title="Полный экран (F)">⛶ Fullscreen</button>
+<button class="nav-btn notes-btn" id="notesBtn" title="Заметки (S)">📝 Notes</button>
+
+<div class="deck-wrapper">
+<div class="deck" id="deck">
+
+<!-- ====================== SLIDE 1 — Cover ====================== -->
+<section class="slide active" data-slide="1">
+  <div class="binary-bg" aria-hidden="true" data-decor>0a0e1a 41 637466 7b 01000001 51304a51 3d 3d 62 61 73 65 36 34 0x41 65 0b1000001 QQ== 7c3aed 22d3ee 6374667b6261736536347d 01000010 01001001 01010100 5933526d 6532356c 6333526c 5a48303d Y3Rme2Jhc2U2NH0= 6374667b6865787d 01100011 01110100 01100110 01111011 NjM3NDY2N7I3NDc3Njk2MzY1N2Q= L3Ezr3WiqS9vAwEsL29gLz99</div>
+  <div class="slide-content" style="justify-content:center;align-items:flex-start;position:relative;z-index:2">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--cyan);margin-bottom:18px;letter-spacing:.1em">CTF CLUB · ПРИОРИТЕТ 1</div>
+    <h1 style="font-size:72px;font-weight:800;letter-spacing:-.03em;line-height:1.02;margin-bottom:18px">Кодировки <span style="background:linear-gradient(135deg,var(--violet-soft),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">в CTF</span></h1>
+    <p style="font-size:21px;color:var(--text-muted);max-width:780px;margin-bottom:28px;line-height:1.4">Модуль Priority 1 · 2 занятия × 2 часа · Кружок CTF, 8–10 класс</p>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:14px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">
+      <span><span style="color:var(--violet-soft)">←</span> После модуля: регулярки Python</span>
+      <span><span style="color:var(--cyan)">→</span> Перед модулем: криптография (Caesar, XOR)</span>
+    </div>
+  </div>
+  <div class="corner-mark"><span class="dot"></span>CTF · ENCODINGS</div>
+  <aside class="speaker-notes">
+    <p><strong>Приветствие и активация.</strong> Поздороваться, спросить кто помнит <code>ord()</code> и <code>chr()</code> из прошлого занятия (или regex). Поднять руки, быстро опросить.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>Объяснить тайминг модуля: 2 занятия по ~2 часа, в каждом ~50% теории и ~50% практики. Сегодня — занятие 1.</p>
+    <span class="nlabel">Главное правило</span>
+    <p>Кодировка ≠ шифрование. В кодировке нет секретного ключа — это просто способ записать данные. Это ключевое отличие, к которому будем возвращаться.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Кто слышал про base64? Про ROT13? Про brainfuck? (быстрый опрос руками)</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 2 — Roadmap ====================== -->
+<section class="slide" data-slide="2">
+  <div class="corner-mark"><span class="dot"></span>ROADMAP</div>
+  <div class="slide-content">
+    <h2>Дорожная карта модуля</h2>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="card" style="border-left:3px solid var(--violet)">
+          <h4 style="color:var(--violet-soft)">Занятие 1 · ~2 часа</h4>
+          <ul>
+            <li>Системы счисления: <code class="inline">bin</code> / <code class="inline">oct</code> / <code class="inline">hex</code></li>
+            <li>ASCII таблица</li>
+            <li><code class="inline">ord()</code> и <code class="inline">chr()</code> в Python</li>
+            <li>Base64 (и Base32/85 обзорно)</li>
+            <li>Онлайн-тулы: CyberChef, dcode.fr</li>
+            <li>8 практических задач</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card" style="border-left:3px solid var(--cyan)">
+          <h4 style="color:var(--cyan)">Занятие 2 · ~2 часа</h4>
+          <ul>
+            <li>Recap + ROT13 / ROT-N</li>
+            <li>Unicode и UTF-8</li>
+            <li>URL-encoding (percent encoding)</li>
+            <li>Brainfuck — эзотерический язык</li>
+            <li>Мини-CTF: 8 задач на комбо кодировок</li>
+            <li>Итоги модуля и что дальше</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:12px">
+      <strong>Связующее звено:</strong> всё это про представление строк в памяти компьютера. Байты — это байты; кодировка — способ их прочитать.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Подчеркнуть.</strong> В CTF кодировки — это ~70% всех misc-задач. Это базовый навык, без которого ничего не решить.</p>
+    <span class="nlabel">Что впереди</span>
+    <p>В конце второго занятия будет мини-CTF с 8 задачами. Финальная задача — комбинация 4 кодировок (hex → brainfuck → base64 → URL). Кто решит все 8 — молодец.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Поднимите руку, кто слышал про base64? Про ROT13? Про brainfuck? Про CyberChef?</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты на этот слайд. Цель — дать общую картину, не углубляться в детали.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 3 — Section divider Занятие 1 ====================== -->
+<section class="slide" data-slide="3">
+  <div class="corner-mark"><span class="dot"></span>SESSION 1</div>
+  <div class="section-divider slide-content">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--cyan);margin-bottom:10px;letter-spacing:.15em">// СЕССИЯ 1</div>
+    <div class="section-big">Занятие 1</div>
+    <p style="font-size:26px;color:var(--text);font-weight:500;margin-bottom:14px">Системы счисления, ASCII и Base64</p>
+    <p style="font-size:15px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">~2 часа · 16 слайдов теории и практики</p>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Краткое введение.</strong> Сегодня разберём, как одно и то же значение (например, буква A) можно записать десятком способов. В конце — 8 задач разной сложности.</p>
+    <span class="nlabel">План на сегодня</span>
+    <p>Системы счисления → ASCII → ord/chr → Base64 → тулы → 8 задач (50 мин) → разбор решений.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>30 секунд на слайд-разделитель, сразу переходим к содержанию.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 4 — Зачем кодировки ====================== -->
+<section class="slide" data-slide="4">
+  <div class="corner-mark"><span class="dot"></span>WHY</div>
+  <div class="slide-content">
+    <h2>Почему кодировки — <span class="accent-v">первая тема CTF</span></h2>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-num">~70%</div>
+        <div class="stat-label">сколько misc-задач используют кодировки</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num cyan">5+</div>
+        <div class="stat-label">среднее число кодировок в одной задаче уровня medium</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num green">0</div>
+        <div class="stat-label">секретных ключей (это не шифрование!)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">CyberChef</div>
+        <div class="stat-label">главный инструмент CTF-игрока</div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:14px">
+      <strong>Кодировка ≠ шифрование.</strong> В кодировке нет ключа — преобразование обратимо любым, кто знает алгоритм. В шифровании без ключа не обойтись.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div class="card card-tight">
+        <h4 style="color:var(--cyan)">Кодировка (encoding)</h4>
+        <p style="font-size:14px">base64, hex, URL-encoding, ROT13. Любой может декодировать — алгоритм открыт.</p>
+      </div>
+      <div class="card card-tight">
+        <h4 style="color:var(--red)">Шифрование (encryption)</h4>
+        <p style="font-size:14px">AES, RSA, XOR с ключом. Без ключа — никак. Это тема следующего модуля.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Главное различие</strong>, которое ученики должны запомнить раз и навсегда: кодировка обратима без ключа, шифрование — нет.</p>
+    <span class="nlabel">Пример</span>
+    <p>base64 — кодировка (любой декодирует), AES — шифрование (без ключа не получится).</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>А ROT13 — это кодировка или шифр? Технически шифр Цезаря со сдвигом 13, но поскольку ключ всегда 13 и известен всем — на практике ведёт себя как кодировка. Это хорошая шутка для класса.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты. Подчеркнуть цифру 70% — это мотивация серьёзно отнестись к теме.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 5 — Что такое кодировка ====================== -->
+<section class="slide" data-slide="5">
+  <div class="corner-mark"><span class="dot"></span>DEFINITION</div>
+  <div class="slide-content">
+    <h2>Что такое кодировка</h2>
+    <p class="lead">Способ представить данные в виде текста или другой формы. Один и тот же символ можно записать по-разному.</p>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:center;margin-top:8px;flex:1">
+      <div>
+        <div class="diagram-a">A</div>
+        <div style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:8px">один символ</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="card card-tight" style="display:flex;align-items:center;gap:14px;border-left:3px solid var(--violet)">
+          <span style="color:var(--text-muted);font-size:13px;width:140px">символ ASCII</span>
+          <code class="inline" style="font-size:18px">A</code>
+        </div>
+        <div class="card card-tight" style="display:flex;align-items:center;gap:14px;border-left:3px solid var(--cyan)">
+          <span style="color:var(--text-muted);font-size:13px;width:140px">десятичный код</span>
+          <code class="inline" style="font-size:18px">65</code>
+        </div>
+        <div class="card card-tight" style="display:flex;align-items:center;gap:14px;border-left:3px solid var(--cyan)">
+          <span style="color:var(--text-muted);font-size:13px;width:140px">шестнадцатеричный</span>
+          <code class="inline" style="font-size:18px">0x41</code>
+        </div>
+        <div class="card card-tight" style="display:flex;align-items:center;gap:14px;border-left:3px solid var(--violet)">
+          <span style="color:var(--text-muted);font-size:13px;width:140px">бинарный</span>
+          <code class="inline" style="font-size:18px">01000001</code>
+        </div>
+        <div class="card card-tight" style="display:flex;align-items:center;gap:14px;border-left:3px solid var(--green)">
+          <span style="color:var(--text-muted);font-size:13px;width:140px">base64 (от 'A')</span>
+          <code class="inline" style="font-size:18px">QQ==</code>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Компьютер хранит только байты (числа 0–255). Любой текст, картинка, музыка — это байты. Кодировка — способ договориться, как байты превратить в символы.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Ключевая идея.</strong> Одно значение — много представлений. Буква A — это и символ, и число 65, и байты 0x41, и биты 01000001, и base64-строка QQ==.</p>
+    <span class="nlabel">Метафора</span>
+    <p>Компьютер хранит только байты. Любой текст, картинка, музыка — это байты. Кодировка — это способ договориться, как байты превратить в символы.</p>
+    <span class="nlabel">Что подчеркнуть</span>
+    <p>Сосредоточиться на идее: одно значение — много представлений. Это лейтмотив всего модуля.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~2 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 6 — Системы счисления ====================== -->
+<section class="slide" data-slide="6">
+  <div class="corner-mark"><span class="dot"></span>NUMBERS</div>
+  <div class="slide-content">
+    <h2>Системы счисления</h2>
+    <table style="margin-top:6px">
+      <thead>
+        <tr><th>Система</th><th>Основание</th><th>Пример: 65</th><th>Префикс в Python</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Десятичная</td><td>10</td><td><code>65</code></td><td><code>(нет)</code></td></tr>
+        <tr><td>Двоичная</td><td>2</td><td><code>01000001</code></td><td><code>0b</code></td></tr>
+        <tr><td>Восьмеричная</td><td>8</td><td><code>101</code></td><td><code>0o</code></td></tr>
+        <tr><td>Шестнадцатеричная</td><td>16</td><td><code>41</code></td><td><code>0x</code></td></tr>
+      </tbody>
+    </table>
+    <div class="callout" style="margin-top:10px">
+      <strong>Почему hex так популярен:</strong> 1 байт = ровно 2 hex-символа. Идеально для чтения бинарных данных.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+      <div class="card card-tight">
+        <h4 style="color:var(--violet-soft)">Hex — НЕ шифр, НЕ кодировка</h4>
+        <p style="font-size:14px">Это система счисления, как десятичная. Но в CTF строки из hex-символов [0-9a-f] встречаются постоянно.</p>
+      </div>
+      <div class="card card-tight">
+        <h4 style="color:var(--cyan)">Запомнить</h4>
+        <p style="font-size:14px"><code class="inline">0x41</code> = <code class="inline">'A'</code>. Это опорное значение, от которого легко считать другие.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Подчеркнуть:</strong> hex — НЕ шифр, НЕ кодировка — это система счисления, как десятичная. Но в CTF строки из hex-символов [0-9a-f] встречаются постоянно.</p>
+    <span class="nlabel">Опорные значения</span>
+    <p>Запомнить: 0x41 = 'A'. Отсюда 0x42='B', 0x61='a' (т.к. 0x41+0x20=0x61).</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Как перевести 0x6f в десятичную? <strong>Ответ:</strong> 6*16+15 = 111 = 'o'.</p>
+    <span class="nlabel">Типичная ошибка</span>
+    <p>Путают 0x с префиксом или забывают его. <code>int('41')</code> без базы воспринимает как десятичное → 41, а не 65.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 7 — Конвертация в Python ====================== -->
+<section class="slide" data-slide="7">
+  <div class="corner-mark"><span class="dot"></span>PYTHON</div>
+  <div class="slide-content">
+    <h2>Конвертация в Python</h2>
+    <div class="two-col">
+      <div class="col">
+<pre><code><span class="com"># Десятичное -> другие системы</span>
+&gt;&gt;&gt; bin(<span class="num">65</span>)        <span class="com"># '0b1000001'</span>
+&gt;&gt;&gt; oct(<span class="num">65</span>)        <span class="com"># '0o101'</span>
+&gt;&gt;&gt; hex(<span class="num">65</span>)        <span class="com"># '0x41'</span>
+
+<span class="com"># Обратно в десятичное</span>
+&gt;&gt;&gt; int(<span class="str">'0b1000001'</span>, <span class="num">2</span>)   <span class="com"># 65</span>
+&gt;&gt;&gt; int(<span class="str">'0x41'</span>, <span class="num">16</span>)       <span class="com"># 65</span>
+&gt;&gt;&gt; int(<span class="str">'41'</span>, <span class="num">16</span>)         <span class="com"># 65 (без префикса)</span>
+
+<span class="com"># format() — без префиксов</span>
+&gt;&gt;&gt; format(<span class="num">65</span>, <span class="str">'b'</span>)   <span class="com"># '1000001'</span>
+&gt;&gt;&gt; format(<span class="num">65</span>, <span class="str">'x'</span>)   <span class="com"># '41'</span>
+&gt;&gt;&gt; format(<span class="num">65</span>, <span class="str">'08b'</span>) <span class="com"># '01000001' (дополненный)</span></code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">4 функции — рефлекс</h4>
+          <ul style="font-size:14px">
+            <li><code class="inline">bin()</code> → двоичная</li>
+            <li><code class="inline">oct()</code> → восьмеричная</li>
+            <li><code class="inline">hex()</code> → шестнадцатеричная</li>
+            <li><code class="inline">int(x, base)</code> → обратно в десятичное</li>
+          </ul>
+        </div>
+        <div class="callout callout-cyan">
+          <code class="inline">int()</code> принимает второй аргумент — основание системы. Без него строка воспринимается как десятичная.
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Трюк</span>
+          <code class="inline">format(65, '08b')</code> — удобен для получения ровно 8 бит (одного байта). Пригодится в задачах с бинарными строками.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти по каждой строке вживую.</strong> Открыть Python REPL (или онлайн-консоль, например python.org/shell или replit). Набирать команды прямо на занятии.</p>
+    <span class="nlabel">Что показать</span>
+    <p>Что <code>int('0x41', 16)</code> и <code>int('41', 16)</code> дают один и тот же результат (65). Это удивляет школьников.</p>
+    <span class="nlabel">Типичная ошибка</span>
+    <p><code>int('41')</code> без базы воспринимает как десятичное → 41, а не 65. Обязательно показать эту ловушку.</p>
+    <span class="nlabel">format()</span>
+    <p><code>format(65, '08b')</code> даёт '01000001' — ровно 8 бит. Это полезно, когда в задаче даны бинарные строки по 8 символов.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут. Дать ученикам самим набрать команды.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 8 — ASCII ====================== -->
+<section class="slide" data-slide="8">
+  <div class="corner-mark"><span class="dot"></span>ASCII</div>
+  <div class="slide-content">
+    <h2>ASCII — <span class="accent-c">таблица символов</span></h2>
+    <p class="lead">128 символов, номера 0–127. 0–31 управляющие (Enter, Tab), 32–127 печатные.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;flex:1">
+      <div class="card">
+        <h4 style="color:var(--violet-soft)">Цветовые диапазоны</h4>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+          <div><span class="ascii-range r-grey">0–31</span> управляющие (Enter, Tab)</div>
+          <div><span class="ascii-range r-grey">32–47</span> пробел и знаки <code class="inline">. , ? !</code></div>
+          <div><span class="ascii-range r-green">48–57</span> цифры 0–9</div>
+          <div><span class="ascii-range r-amber">58–64</span> знаки препинания</div>
+          <div><span class="ascii-range r-blue">65–90</span> A–Z (заглавные)</div>
+          <div><span class="ascii-range r-amber">91–96</span> знаки</div>
+          <div><span class="ascii-range r-violet">97–122</span> a–z (строчные)</div>
+          <div><span class="ascii-range r-amber">123–127</span> <code class="inline">{ } ~</code> и т.д.</div>
+        </div>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--cyan)">Мнемоника</h4>
+        <p style="font-size:15px">Запомнить три опорных значения:</p>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:18px"><span class="accent-c">'0'</span> = <span class="accent-v-strong">48</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:18px"><span class="accent-c">'A'</span> = <span class="accent-v-strong">65</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:18px"><span class="accent-c">'a'</span> = <span class="accent-v-strong">97</span></div>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);margin-top:10px">От них легко посчитать остальные. Разница между заглавной и строчной = <strong>32</strong>.</p>
+        <div class="callout callout-cyan" style="margin-top:8px;padding:8px 12px;font-size:13px">
+          ASCII — только английский алфавит. Для русского нужен Unicode (занятие 2).
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Открыть ascii.cl</strong> в браузере или показать таблицу на экране. Дать ученикам 30 секунд полистать.</p>
+    <span class="nlabel">Что объяснить</span>
+    <p>Разница между заглавной и строчной буквой = 32. Например, 'A'=65, 'a'=97. Это пригодится для ROT и частотного анализа на следующих занятиях.</p>
+    <span class="nlabel">Пределы ASCII</span>
+    <p>ASCII охватывает только английский алфавит (0-127). Для русского нужен Unicode — это на занятии 2.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Чему равен код '{' ? <strong>Ответ:</strong> 123. И '}' ? <strong>Ответ:</strong> 125. Это пригодится в задачах с флагом ctf{...}.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 9 — ord() и chr() ====================== -->
+<section class="slide" data-slide="9">
+  <div class="corner-mark"><span class="dot"></span>PYTHON</div>
+  <div class="slide-content">
+    <h2><code class="inline">ord()</code> и <code class="inline">chr()</code> в Python</h2>
+    <div class="two-col">
+      <div class="col">
+<pre><code><span class="com"># ord() — символ -> код</span>
+&gt;&gt;&gt; ord(<span class="str">'A'</span>)   <span class="com"># 65</span>
+&gt;&gt;&gt; ord(<span class="str">'a'</span>)   <span class="com"># 97</span>
+&gt;&gt;&gt; ord(<span class="str">'{'</span>)   <span class="com"># 123</span>
+
+<span class="com"># chr() — код -> символ</span>
+&gt;&gt;&gt; chr(<span class="num">65</span>)    <span class="com"># 'A'</span>
+&gt;&gt;&gt; chr(<span class="num">99</span>) + chr(<span class="num">116</span>) + chr(<span class="num">102</span>)
+<span class="com"># 'ctf'</span>
+
+<span class="com"># По строке целиком</span>
+&gt;&gt;&gt; [ord(c) <span class="kw">for</span> c <span class="kw">in</span> <span class="str">'ctf'</span>]
+<span class="com"># [99, 116, 102]</span>
+
+<span class="com"># ВАЖНО: для русских букв код большой</span>
+&gt;&gt;&gt; ord(<span class="str">'ф'</span>)   <span class="com"># 1092 (это уже Unicode)</span></code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">ord(chr) — взаимнообратные</h4>
+          <p style="font-size:14px"><code class="inline">ord(chr(x)) == x</code> всегда.<br><code class="inline">chr(ord(c)) == c</code> всегда.</p>
+        </div>
+        <div class="callout">
+          Полезно для перевода строки в список кодов и обратно: <code class="inline">[ord(c) for c in s]</code>.
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Подводный камень</span>
+          ord() принимает только <strong>1 символ</strong>. <code class="inline">ord('ab')</code> → TypeError. Для строки нужен list comprehension.
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Русские буквы</span>
+          <code class="inline">ord('ф')</code> = 1092 — это уже Unicode (код-пункт U+0444). ASCII охватывает только 0-127.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Показать на практике.</strong> В REPL набрать ord('A'), chr(65), [ord(c) for c in 'ctf']. Особо обратить внимание на русский пример: ord('ф') даёт 1092 — это уже Unicode.</p>
+    <span class="nlabel">Подчеркнуть</span>
+    <p>ord(chr) — взаимнообратные функции. ord(chr(x)) всегда == x.</p>
+    <span class="nlabel">Типичная ошибка</span>
+    <p>Пытаться ord() применять к строке длиннее 1 символа — будет TypeError. Показать ошибку вживую.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Что вернёт <code>chr(ord('A') + 32)</code>? <strong>Ответ:</strong> 'a'. Это "трюк" для конвертации в нижний регистр через сложение с 32.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 10 — Онлайн-тулы ====================== -->
+<section class="slide" data-slide="10">
+  <div class="corner-mark"><span class="dot"></span>TOOLS</div>
+  <div class="slide-content">
+    <h2>Онлайн-тулы: <span class="accent-c">CyberChef</span> и <span class="accent-v">dcode.fr</span></h2>
+    <div class="two-col">
+      <div class="col">
+        <div class="card" style="border-left:3px solid var(--violet)">
+          <h3 style="color:var(--violet-soft)">CyberChef</h3>
+          <p style="font-size:13px"><a href="https://gchq.github.io/CyberChef" style="color:var(--cyan)">gchq.github.io/CyberChef</a></p>
+          <h4>Назначение</h4>
+          <p style="font-size:14px">швейцарский нож для кодировок</p>
+          <h4>Как использовать</h4>
+          <ul style="font-size:13px">
+            <li>drag-and-drop операций в "Recipe"</li>
+            <li>вставить input в поле</li>
+            <li>смотреть Output</li>
+          </ul>
+          <h4>Полезные операции</h4>
+          <p style="font-size:13px">From Base64, From Hex, From Binary, ROT13 Brute Force, To Text, Magic</p>
+          <h4>Фишка</h4>
+          <p style="font-size:13px">можно построить цепочку операций (Bake)</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card" style="border-left:3px solid var(--cyan)">
+          <h3 style="color:var(--cyan)">dcode.fr</h3>
+          <p style="font-size:13px"><a href="https://dcode.fr" style="color:var(--cyan)">dcode.fr</a></p>
+          <h4>Назначение</h4>
+          <p style="font-size:14px">энциклопедия кодировок и шифров</p>
+          <h4>Фишка</h4>
+          <p style="font-size:13px">авто-детекция — вставил строку, сайт сам угадывает кодировку</p>
+          <h4>Большой раздел</h4>
+          <p style="font-size:13px">с описанием каждой кодировки: история, алфавит, примеры, инструменты</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      В CTF <strong>90% времени</strong> — это CyberChef. Python — для автоматизации и нестандартных задач.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Открыть CyberChef в браузере</strong> и показать интерфейс. Демонстрация: вставить 'Y3Rme2Jhc2U2NH0=' в input, добавить операцию 'From Base64', увидеть 'ctf{base64}'.</p>
+    <span class="nlabel">Цель демонстрации</span>
+    <p>Это разоружает учеников — они понимают, что задачи решаемы. CyberChef делает магию видимой.</p>
+    <span class="nlabel">Совет</span>
+    <p>Закладка в браузере, всегда держать открытым. Это инструмент №1 для всего модуля.</p>
+    <span class="nlabel">Про dcode.fr</span>
+    <p>Когда CyberChef не справляется или нужно понять, что за кодировка — dcode.fr с авто-детекцией выручает. Также там есть описания для понимания.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут, включая живую демонстрацию.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 11 — Base64 что это ====================== -->
+<section class="slide" data-slide="11">
+  <div class="corner-mark"><span class="dot"></span>BASE64</div>
+  <div class="slide-content">
+    <h2>Base64 — <span class="accent-v">что это и зачем</span></h2>
+    <p class="lead">Кодирует любые бинарные данные в печатные ASCII-символы. Алфавит: A-Z, a-z, 0-9, +, / (64 символа). Дополняется символом '='.</p>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Где используется</h4>
+          <ul style="font-size:14px">
+            <li>Email (MIME)</li>
+            <li>Data: URLs в HTML</li>
+            <li>JWT токены</li>
+            <li>Картинки в CSS (<code class="inline">background: url(data:image/png;base64,...)</code>)</li>
+            <li>CTF флаги (очень часто)</li>
+          </ul>
+        </div>
+        <div class="callout" style="margin-top:8px">
+          Зачем: не все байты можно безопасно передать как текст (например, байт 0x00 ломает протоколы). Base64 переводит любые байты в "безопасные" ASCII.
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">Примеры</h4>
+<pre style="margin-top:6px"><code><span class="str">'CTF'</span>  <span class="kw">--&gt;</span>  <span class="str">Q1RG</span>
+<span class="str">'flag'</span> <span class="kw">--&gt;</span>  <span class="str">ZmxhZw==</span></code></pre>
+        </div>
+        <div class="card">
+          <h4 style="color:var(--cyan)">Длина и распознавание</h4>
+          <p style="font-size:14px">Длина base64 = ~4/3 от исходных данных (на 33% больше).</p>
+          <p style="font-size:13px;margin-top:6px">Regex для base64:</p>
+<pre style="margin-top:4px;font-size:11px"><code>^[A-Za-z0-9+/]*={0,2}$</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Объяснить проблему.</strong> Не все байты можно безопасно передать как текст. Например, байт 0x00 (null) ломает многие протоколы (C-строки). Base64 решает это — переводит любые байты в "безопасные" печатные ASCII.</p>
+    <span class="nlabel">Алфавит</span>
+    <p>64 символа: A-Z (26) + a-z (26) + 0-9 (10) + '+' и '/' = 64. Padding '='.</p>
+    <span class="nlabel">Размер</span>
+    <p>Типичная длина base64 = ~4/3 от исходных данных (то есть на 33% больше). Это плата за безопасность.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Как выглядит base64 с точки зрения регулярок? <strong>Ответ:</strong> <code>^[A-Za-z0-9+/]*={0,2}$</code> — это пригодится при анализе подозрительных строк.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 12 — Как работает Base64 ====================== -->
+<section class="slide" data-slide="12">
+  <div class="corner-mark"><span class="dot"></span>BASE64 · HOW</div>
+  <div class="slide-content">
+    <h2>Как работает Base64 — <span class="accent-c">визуально</span></h2>
+    <p class="lead">Кодирование 'Man' → 'TWFu'. Берём 3 байта (24 бита), разбиваем на 4 группы по 6 бит.</p>
+    <div style="display:grid;grid-template-columns:1fr 220px;gap:16px;margin-top:6px;flex:1">
+      <div>
+        <div class="card card-tight" style="border-left:3px solid var(--violet)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px">
+            <div style="margin-bottom:4px"><span class="muted">Шаг 1.</span> Байты 'M' 'a' 'n' → <span class="accent-c">77 97 110</span></div>
+            <div style="margin-bottom:4px"><span class="muted">Шаг 2.</span> В двоичном: <span class="accent-c">01001101 01100001 01101110</span> (24 бита)</div>
+            <div style="margin-bottom:4px"><span class="muted">Шаг 3.</span> Разбиваем на 4 группы по 6 бит:</div>
+            <div style="padding-left:20px;color:var(--cyan);margin-bottom:4px">010011 · 010110 · 000101 · 101110</div>
+            <div style="margin-bottom:4px"><span class="muted">Шаг 4.</span> Каждая группа → индекс: <span class="accent-c">19, 22, 5, 46</span></div>
+            <div style="margin-bottom:4px"><span class="muted">Шаг 5.</span> По таблице: <span class="accent-v">19='T', 22='W', 5='F', 46='u'</span></div>
+            <div><span class="muted">Шаг 6.</span> Результат: <span class="accent-v-strong" style="font-size:18px">TWFu</span></div>
+          </div>
+        </div>
+        <div class="callout callout-cyan" style="margin-top:8px">
+          Если длина не кратна 3 — добавляется padding '='. Поэтому в конце base64 часто 1 или 2 знака '='.
+        </div>
+      </div>
+      <div>
+        <div class="card card-tight">
+          <h4 style="color:var(--cyan)">Алфавит (первые 16)</h4>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7">
+            <div>0=A · 1=B · 2=C · 3=D</div>
+            <div>4=E · 5=F · 6=G · 7=H</div>
+            <div>8=I · 9=J · 10=K · 11=L</div>
+            <div>12=M · 13=N · 14=O · 15=P</div>
+            <div>16=Q · 17=R · 18=S · 19=<span class="accent-v-strong">T</span></div>
+            <div>20=U · 21=V · 22=<span class="accent-v-strong">W</span> · 23=X</div>
+            <div>24=Y · 25=Z · 26=a · 27=b</div>
+            <div>28=c · 29=d · 30=e · 31=f</div>
+            <div style="color:var(--text-muted);margin-top:4px">... и так до 63='/'</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Важно объяснить идею:</strong> берём 3 байта (24 бита), разбиваем на 4 группы по 6 бит. Каждая 6-битная группа = число 0-63 = индекс в алфавите из 64 символов. Поэтому и называется base64.</p>
+    <span class="nlabel">Padding</span>
+    <p>Если длина не кратна 3 — добавляется padding '='. Если 1 байт остался → '=='. Если 2 байта осталиcь → '='. Если кратно 3 → ничего.</p>
+    <span class="nlabel">Пройти по схеме медленно</span>
+    <p>Можно вместе посчитать: 010011 в десятичной = 16+2+1 = 19. По таблице 19=T. 010110 = 16+4+2 = 22 → W. И т.д.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут. Это один из ключевых слайдов — не спешить.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 13 — Base64 в Python ====================== -->
+<section class="slide" data-slide="13">
+  <div class="corner-mark"><span class="dot"></span>PYTHON</div>
+  <div class="slide-content">
+    <h2>Base64 в Python</h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="compact"><code><span class="kw">import</span> base64
+
+<span class="com"># Кодирование</span>
+&gt;&gt;&gt; base64.b64encode(<span class="str">b'CTF'</span>)
+<span class="com"># b'Q1RG'</span>
+
+<span class="com"># Декодирование</span>
+&gt;&gt;&gt; base64.b64decode(<span class="str">'Q1RG'</span>)
+<span class="com"># b'CTF'</span>
+
+<span class="com"># ВАЖНО: работает с bytes, не str!</span>
+&gt;&gt;&gt; base64.b64encode(<span class="str">'CTF'</span>)       <span class="com"># ОШИБКА</span>
+<span class="com"># TypeError: a bytes-like object is required</span>
+
+<span class="com"># Поэтому обычно так:</span>
+&gt;&gt;&gt; s = <span class="str">'CTF'</span>
+&gt;&gt;&gt; b64 = base64.b64encode(s.encode()).decode()
+&gt;&gt;&gt; b64
+<span class="com"># 'Q1RG'</span>
+
+<span class="com"># И обратно:</span>
+&gt;&gt;&gt; decoded = base64.b64decode(b64).decode()
+&gt;&gt;&gt; decoded
+<span class="com"># 'CTF'</span></code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--red)">Главный подводный камень</h4>
+          <p style="font-size:14px">base64 работает с <strong>bytes</strong>, не str!</p>
+        </div>
+        <div class="callout">
+          Если у вас строка — сначала <code class="inline">.encode()</code>, потом <code class="inline">b64encode()</code>. Результат — bytes, поэтому <code class="inline">.decode()</code> обратно в str.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--cyan)">str vs bytes</h4>
+          <p style="font-size:13px"><strong>str</strong> — текст (Unicode)<br><strong>bytes</strong> — байты (числа 0-255)</p>
+          <p style="font-size:13px;margin-top:6px">base64 — про байты. <code class="inline">b'CTF'</code> ≠ <code class="inline">'CTF'</code>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Это самая частая ошибка у школьников.</strong> Пройти по строкам с .encode() и .decode() медленно, по одной строке.</p>
+    <span class="nlabel">Разница str/bytes</span>
+    <p>str — это текст (Unicode). bytes — это байты (числа 0-255). base64 — про байты. 'CTF' (str) ≠ b'CTF' (bytes).</p>
+    <span class="nlabel">Паттерн</span>
+    <p>Стандартный цикл: <code>str → .encode() → bytes → b64encode() → bytes → .decode() → str</code>. Запомнить эту цепочку.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Что будет если применить b64encode к уже закодированной строке? <strong>Ответ:</strong> ничего страшного, получится base64 от base64 (часто встречается в CTF как многослойная задача).</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 14 — Вариации Base64 ====================== -->
+<section class="slide" data-slide="14">
+  <div class="corner-mark"><span class="dot"></span>VARIANTS</div>
+  <div class="slide-content">
+    <h2>Вариации Base64</h2>
+    <table style="font-size:12.5px">
+      <thead>
+        <tr><th>Вариант</th><th>Алфавит</th><th>Когда встречается</th><th>Как узнать</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Base64</strong> (стандарт)</td><td><code>A-Za-z0-9+/</code></td><td>Email, JWT, CTF</td><td>есть = в конце, могут быть + /</td></tr>
+        <tr><td><strong>Base64 URL-safe</strong></td><td><code>A-Za-z0-9-_</code></td><td>URL, JWT в query</td><td>вместо +/ стоят -_</td></tr>
+        <tr><td><strong>Base32</strong></td><td><code>A-Z2-7</code></td><td>DNS, TOTP (2FA)</td><td>только заглавные буквы и цифры 2-7</td></tr>
+        <tr><td><strong>Base85</strong> (Ascii85)</td><td>85 печатных символов</td><td>PDF, PostScript</td><td>широкий набор символов, короче</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+      <div class="card card-tight">
+        <h4 style="color:var(--cyan)">Распознавание по алфавиту</h4>
+        <ul style="font-size:13px">
+          <li><strong>Base64:</strong> большие+маленькие буквы + цифры + иногда +/=</li>
+          <li><strong>Base32:</strong> ТОЛЬКО ЗАГЛАВНЫЕ + 2-7 + иногда =</li>
+          <li><strong>Hex:</strong> только 0-9a-f</li>
+        </ul>
+      </div>
+      <div class="tip-box">
+        <span class="tip-h">Совет</span>
+        CyberChef <strong>"Magic"</strong> операция авто-детектирует кодировку. В Python — <code class="inline">base64.urlsafe_b64decode()</code> для URL-safe варианта.
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>В CTF распознавание по алфавиту — половина успеха.</strong></p>
+    <span class="nlabel">Простые правила</span>
+    <ul>
+      <li>Если видите только [A-Z2-7=] — это Base32.</li>
+      <li>Если только [0-9a-f] — это hex.</li>
+      <li>Если смесь регистров + цифры + иногда +/= — это Base64.</li>
+      <li>Если в base64-подобной строке есть '-' или '_' — это URL-safe Base64.</li>
+    </ul>
+    <span class="nlabel">Совет</span>
+    <p>CyberChef "Magic" операция авто-детектирует. Совет: всегда пробовать Magic первым.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 15 — Разбор примера вместе ====================== -->
+<section class="slide" data-slide="15">
+  <div class="corner-mark"><span class="dot"></span>DEMO</div>
+  <div class="slide-content">
+    <h2>Разбираем задачу <span class="accent-c">вместе</span></h2>
+    <div class="callout" style="margin-bottom:8px">
+      <strong>Задача.</strong> Дано: <code class="inline">6374667b6578616d706c657d</code>. Найти флаг.
+    </div>
+    <div class="two-col">
+      <div class="col">
+        <h4 style="color:var(--violet-soft)">Пошаговый разбор</h4>
+        <ol class="step-list">
+          <li>Видим только символы 0-9a-f → это <strong>hex</strong></li>
+          <li>Каждые 2 hex-символа = 1 байт. 12 пар = 12 байт</li>
+          <li>Переводим в символы по таблице ASCII: <code class="inline">63='c'</code>, <code class="inline">74='t'</code>, <code class="inline">66='f'</code>, <code class="inline">7b='{'</code>, <code class="inline">65='e'</code>...</li>
+          <li>Собираем строку: <strong style="color:var(--green)">ctf{example}</strong></li>
+        </ol>
+        <div class="callout callout-cyan" style="margin-top:8px">
+          Стратегия: всегда сначала определяем алфавит, потом подбираем кодировку.
+        </div>
+      </div>
+      <div class="col">
+        <h4 style="color:var(--cyan)">Решение в Python</h4>
+<pre class="compact"><code><span class="com"># Способ 1: binascii</span>
+<span class="kw">import</span> binascii
+hex_str = <span class="str">'6374667b6578616d706c657d'</span>
+flag = binascii.unhexlify(hex_str).decode()
+<span class="fn">print</span>(flag)  <span class="com"># ctf{example}</span>
+
+<span class="com"># Способ 2: bytes.fromhex</span>
+flag = bytes.fromhex(hex_str).decode()
+<span class="fn">print</span>(flag)  <span class="com"># ctf{example}</span>
+
+<span class="com"># Способ 3: CyberChef</span>
+<span class="com"># Operation: "From Hex"</span>
+<span class="com"># Output: ctf{example}</span></code></pre>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти пошагово вживую.</strong> Сначала спросить класс: какие символы вы видите? (только 0-9 a-f). Что это? (hex).</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Затем в Python REPL — <code>bytes.fromhex('6374667b6578616d706c657d')</code> → видим b'ctf{example}'. Затем .decode() → 'ctf{example}'.</p>
+    <span class="nlabel">Затем в CyberChef</span>
+    <p>Операция From Hex → output: ctf{example}. Показать, что CyberChef делает то же самое, но визуальнее.</p>
+    <span class="nlabel">Подчеркнуть стратегию</span>
+    <p>Всегда сначала определяем алфавит, потом подбираем кодировку. Это главный приём всего модуля.</p>
+    <span class="nlabel">Типичная ошибка</span>
+    <p>Пытаться декодировать как base64 (тоже сработает иногда, но даст мусор, потому что алфавит другой).</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут. Это важный слайд-разбор.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 16 — Практика Занятие 1 обзор ====================== -->
+<section class="slide" data-slide="16">
+  <div class="corner-mark"><span class="dot"></span>PRACTICE</div>
+  <div class="slide-content">
+    <h2>Практика Занятия 1</h2>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num">8</div><div class="stat-label">задач</div></div>
+      <div class="stat"><div class="stat-num cyan">50</div><div class="stat-label">минут</div></div>
+      <div class="stat"><div class="stat-num green">ctf{...}</div><div class="stat-label">формат флага</div></div>
+      <div class="stat"><div class="stat-num">3 + 3 + 2</div><div class="stat-label">easy / medium / hard</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+      <div class="card">
+        <h4 style="color:var(--green)">3 × Easy — одна кодировка</h4>
+        <p style="font-size:14px">hex, binary, base64. Должны решить все.</p>
+        <h4 style="color:var(--amber);margin-top:10px">3 × Medium — две кодировки</h4>
+        <p style="font-size:14px">hex⇄base64 в разном порядке, base64 без padding.</p>
+        <h4 style="color:var(--red);margin-top:10px">2 × Hard — три+ кодировки или подвох</h4>
+        <p style="font-size:14px">triple-nested pipeline, URL-safe base64.</p>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--cyan)">Советы</h4>
+        <ul style="font-size:14px">
+          <li>Сначала определяй алфавит</li>
+          <li>CyberChef Magic авто-детектит</li>
+          <li>В Python: <code class="inline">bytes.fromhex()</code>, <code class="inline">base64.b64decode()</code>, <code class="inline">int(x, 2)</code></li>
+          <li>Запомни: флаг начинается с <code class="inline">ctf{</code> и заканчивается <code class="inline">}</code></li>
+        </ul>
+        <div class="tip-box" style="margin-top:8px">
+          <span class="tip-h">Бонус</span>
+          Кто решил все 8 — придумай свою задачу на 2 кодировки и дай соседу.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Дать ~50 минут.</strong> Ходить по классу, помогать отстающим. Не давать готовые ответы — направлять.</p>
+    <span class="nlabel">Кто опережает</span>
+    <p>Бонусная задача: придумать свою задачу на 2 кодировки и дать соседу. Это развивает креативность.</p>
+    <span class="nlabel">Подсказки</span>
+    <p>Если кто-то застрял на 10 минут — переходи к следующей. Возвращайся позже.</p>
+    <span class="nlabel">Разбор</span>
+    <p>Через 50 минут — разбор всех задач, решения на следующих слайдах (20-22).</p>
+    <span class="nlabel">Тайминг</span>
+    <p>2 минуты на этот слайд (обзор), затем 50 минут практики.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 17 — Задачи 1-3 (Easy) ====================== -->
+<section class="slide" data-slide="17">
+  <div class="corner-mark"><span class="dot"></span>TASKS · EASY</div>
+  <div class="slide-content">
+    <h2>Задачи 1–3 <span class="badge badge-easy">Easy</span></h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 1</span></div>
+        <div class="task-title">Декодируйте hex-строку и найдите флаг:</div>
+<pre><code>6374667b6865787d</code></pre>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 2</span></div>
+        <div class="task-title">Декодируйте бинарную строку и найдите флаг:</div>
+<pre class="compact" style="font-size:10px"><code>01100011 01110100 01100110
+01111011 01100010 01101001
+01101110 01111101</code></pre>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 3</span></div>
+        <div class="task-title">Декодируйте Base64 строку и найдите флаг:</div>
+<pre><code>Y3Rme2Jhc2U2NH0=</code></pre>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:10px">
+      <strong>Подсказка.</strong> Посмотри на алфавит. Только 0-9a-f? только 0 и 1? большие+маленькие буквы + цифры? Это подсказка к кодировке.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Это самые простые задачи</strong> — каждая требует ровно одной операции. Должны решить все за 5-10 минут.</p>
+    <span class="nlabel">Если кто-то застрял</span>
+    <p>Подсказка: посмотри на алфавит (только 0-9a-f? только 0 и 1? большие+маленькие буквы + цифры?).</p>
+    <span class="nlabel">Типичная подсказка</span>
+    <p>"А ты пробовал CyberChef Magic?" — часто этого достаточно.</p>
+    <span class="nlabel">Ожидаемые результаты</span>
+    <ul>
+      <li>Задача 1: ctf{hex}</li>
+      <li>Задача 2: ctf{bin}</li>
+      <li>Задача 3: ctf{base64}</li>
+    </ul>
+    <span class="nlabel">Тайминг</span>
+    <p>~10 минут на эти 3 задачи.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 18 — Задачи 4-6 (Medium) ====================== -->
+<section class="slide" data-slide="18">
+  <div class="corner-mark"><span class="dot"></span>TASKS · MEDIUM</div>
+  <div class="slide-content">
+    <h2>Задачи 4–6 <span class="badge badge-medium">Medium</span></h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 4</span></div>
+        <div class="task-title">Найдите флаг (двойное кодирование):</div>
+<pre style="font-size:10px"><code>5933526d6532356c6333526c
+5a48303d</code></pre>
+        <div class="tip-box" style="margin-top:auto"><span class="tip-h">Подсказка</span>2 слоя</div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 5</span></div>
+        <div class="task-title">Найдите флаг (двойное кодирование):</div>
+<pre style="font-size:10px"><code>NjM3NDY2N2I3NDc3Njk2
+MzY1N2Q=</code></pre>
+        <div class="tip-box" style="margin-top:auto"><span class="tip-h">Подсказка</span>сначала base64, потом hex</div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 6</span></div>
+        <div class="task-title">Найдите флаг (Base64 без padding):</div>
+<pre style="font-size:11px"><code>Y3Rme25vcGFkfQ</code></pre>
+        <div class="tip-box" style="margin-top:auto"><span class="tip-h">Подсказка</span>padding '=' был обрезан</div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:10px">
+      Эти задачи требуют понимать <strong>порядок слоёв</strong>. В задаче 4: hex → base64. В задаче 5: base64 → hex. В задаче 6: добавить padding.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Эти задачи требуют понимать порядок слоёв.</strong></p>
+    <span class="nlabel">Разбор по задачам</span>
+    <ul>
+      <li><strong>Задача 4:</strong> сначала декодируем hex (получим base64), потом base64.</li>
+      <li><strong>Задача 5:</strong> наоборот — сначала base64 (получим hex-строку), потом hex.</li>
+      <li><strong>Задача 6:</strong> base64 padding добавляет '=', но многие библиотеки и CyberChef умеют работать без него.</li>
+    </ul>
+    <span class="nlabel">Подсказка для задачи 6</span>
+    <p>В Python: <code>base64.b64decode(s + '==' * ((4 - len(s) % 4) % 4))</code> — формула для добавления padding.</p>
+    <span class="nlabel">Ожидаемые результаты</span>
+    <ul>
+      <li>Задача 4: ctf{nested}</li>
+      <li>Задача 5: ctf{twice}</li>
+      <li>Задача 6: ctf{nopad}</li>
+    </ul>
+    <span class="nlabel">Тайминг</span>
+    <p>~15 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 19 — Задачи 7-8 (Hard) ====================== -->
+<section class="slide" data-slide="19">
+  <div class="corner-mark"><span class="dot"></span>TASKS · HARD</div>
+  <div class="slide-content">
+    <h2>Задачи 7–8 <span class="badge badge-hard">Hard</span></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;flex:1">
+      <div class="task-card">
+        <div><span class="badge badge-hard">hard</span><span class="task-num">Задача 7</span></div>
+        <div class="task-title">Найдите флаг (тройное кодирование):</div>
+<pre style="font-size:10px;max-height:120px"><code>NTkzMzUyNmQ2NTMzNTI3OTYxNTg0
+MjczNWE1ODMwM2Q=</code></pre>
+        <div class="tip-box"><span class="tip-h">Подсказка</span>base64 → hex → base64</div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-hard">hard</span><span class="task-num">Задача 8</span></div>
+        <div class="task-title">Найдите флаг (URL-safe base64):</div>
+<pre style="font-size:11px"><code>Y3Rmez9hbmQ_fQ==</code></pre>
+        <div class="tip-box"><span class="tip-h">Подсказка</span>алфавит отличается — нет + /, вместо них - _</div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:8px">
+      Задача 7 — классический multi-layer pipeline, главное не запутаться в порядке. Задача 8 — URL-safe base64, используйте <code class="inline">urlsafe_b64decode()</code>.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Самые сложные задачи занятия.</strong></p>
+    <span class="nlabel">Задача 7</span>
+    <p>Это классический multi-layer pipeline, главное не запутаться в порядке. base64 → hex → base64. На каждом шаге проверяем алфавит результата.</p>
+    <span class="nlabel">Задача 8</span>
+    <p>URL-safe base64. Если ученики видят '_' или '-' в base64-подобной строке, нужно использовать URL-safe вариант.</p>
+    <span class="nlabel">В Python</span>
+    <p><code>base64.urlsafe_b64decode()</code>. В CyberChef: операция "From Base64" с галочкой URL-safe.</p>
+    <span class="nlabel">Типичная ошибка в задаче 8</span>
+    <p>Использовать стандартный <code>b64decode</code> и получить ошибку о некорректном символе.</p>
+    <span class="nlabel">Ожидаемые результаты</span>
+    <ul>
+      <li>Задача 7: ctf{triple}</li>
+      <li>Задача 8: ctf{?and?}</li>
+    </ul>
+    <span class="nlabel">Тайминг</span>
+    <p>~15 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 20 — Решения 1-3 ====================== -->
+<section class="slide" data-slide="20">
+  <div class="corner-mark"><span class="dot"></span>SOLUTIONS</div>
+  <div class="slide-content">
+    <h2>Решения 1–3</h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="card card-tight" style="border-top:3px solid var(--green)">
+        <h3 style="font-size:16px;color:var(--green)">Решение 1</h3>
+        <p style="font-size:12px;color:var(--text-muted)">hex → ctf{hex}</p>
+<pre class="compact" style="font-size:11px"><code>&gt;&gt;&gt; bytes.fromhex(
+...   <span class="str">'6374667b6865787d'</span>
+... ).decode()
+<span class="str">'ctf{hex}'</span>
+<span class="com"># Флаг: ctf{hex}</span></code></pre>
+        <p style="font-size:11px;margin-top:6px">Каждая пара hex = 1 байт: 63='c', 74='t', 66='f', 7b='{', 68='h', 65='e', 78='x', 7d='}'.</p>
+      </div>
+      <div class="card card-tight" style="border-top:3px solid var(--green)">
+        <h3 style="font-size:16px;color:var(--green)">Решение 2</h3>
+        <p style="font-size:12px;color:var(--text-muted)">binary → ctf{bin}</p>
+<pre class="compact" style="font-size:10.5px"><code>binary = <span class="str">'01100011 01110100 ...'</span>
+chars = [chr(int(b, <span class="num">2</span>))
+         <span class="kw">for</span> b <span class="kw">in</span> binary.split()]
+flag = <span class="str">''</span>.join(chars)
+<span class="fn">print</span>(flag)  <span class="com"># ctf{bin}</span></code></pre>
+        <p style="font-size:11px;margin-top:6px">Каждая 8-битная группа → <code>int(x, 2)</code> → <code>chr()</code>. Списковое включение собирает строку.</p>
+      </div>
+      <div class="card card-tight" style="border-top:3px solid var(--green)">
+        <h3 style="font-size:16px;color:var(--green)">Решение 3</h3>
+        <p style="font-size:12px;color:var(--text-muted)">base64 → ctf{base64}</p>
+<pre class="compact" style="font-size:11px"><code><span class="kw">import</span> base64
+&gt;&gt;&gt; base64.b64decode(
+...   <span class="str">'Y3Rme2Jhc2U2NH0='</span>
+... ).decode()
+<span class="str">'ctf{base64}'</span></code></pre>
+        <p style="font-size:11px;margin-top:6px">Классический base64 с padding '='. В CyberChef — операция From Base64.</p>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Все три — одна операция декодирования. Главное — правильно определить кодировку по алфавиту.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти по каждому решению.</strong> Обратить внимание на задачу 2 — списковое включение <code>[chr(int(b, 2)) for b in binary.split()]</code>.</p>
+    <span class="nlabel">Если ученики не понимают list comprehension</span>
+    <p>Разобрать пошагово: <code>binary.split()</code> → список строк, <code>int(b, 2)</code> → число, <code>chr()</code> → символ, <code>''.join()</code> → строка.</p>
+    <span class="nlabel">Связь с прошлым занятием</span>
+    <p>Это прямое применение регулярок/Python из прошлого занятия. Подчеркнуть преемственность.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут на разбор.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 21 — Решения 4-6 ====================== -->
+<section class="slide" data-slide="21">
+  <div class="corner-mark"><span class="dot"></span>SOLUTIONS</div>
+  <div class="slide-content">
+    <h2>Решения 4–6</h2>
+    <div class="three-col" style="margin-top:6px;font-size:11px">
+      <div class="card card-tight" style="border-top:3px solid var(--amber)">
+        <h3 style="font-size:15px;color:var(--amber)">Решение 4</h3>
+        <p style="font-size:11px;color:var(--text-muted)">hex → b64 → ctf{nested}</p>
+<pre class="compact" style="font-size:10px"><code><span class="kw">import</span> base64
+hex_str = <span class="str">'5933526d...'</span>
+<span class="com"># Шаг 1: hex -> base64-стр</span>
+b64_str = bytes.fromhex(
+  hex_str).decode()
+<span class="fn">print</span>(b64_str)
+<span class="com"># Y3Rme25lc3RlZH0=</span>
+<span class="com"># Шаг 2: base64 -> flag</span>
+flag = base64.b64decode(
+  b64_str).decode()
+<span class="fn">print</span>(flag)
+<span class="com"># ctf{nested}</span></code></pre>
+      </div>
+      <div class="card card-tight" style="border-top:3px solid var(--amber)">
+        <h3 style="font-size:15px;color:var(--amber)">Решение 5</h3>
+        <p style="font-size:11px;color:var(--text-muted)">b64 → hex → ctf{twice}</p>
+<pre class="compact" style="font-size:10px"><code><span class="kw">import</span> base64
+b64_str = <span class="str">'NjM3NDY2...'</span>
+<span class="com"># Шаг 1: base64 -> hex-стр</span>
+hex_str = base64.b64decode(
+  b64_str).decode()
+<span class="fn">print</span>(hex_str)
+<span class="com"># 6374667b74776963657d</span>
+<span class="com"># Шаг 2: hex -> flag</span>
+flag = bytes.fromhex(
+  hex_str).decode()
+<span class="fn">print</span>(flag)
+<span class="com"># ctf{twice}</span></code></pre>
+      </div>
+      <div class="card card-tight" style="border-top:3px solid var(--amber)">
+        <h3 style="font-size:15px;color:var(--amber)">Решение 6</h3>
+        <p style="font-size:11px;color:var(--text-muted)">b64 no pad → ctf{nopad}</p>
+<pre class="compact" style="font-size:10px"><code><span class="kw">import</span> base64
+s = <span class="str">'Y3Rme25vcGFkfQ'</span>
+<span class="com"># Добавляем padding</span>
+pad = (<span class="num">4</span> - len(s) % <span class="num">4</span>) % <span class="num">4</span>
+s_padded = s + <span class="str">'='</span> * pad
+flag = base64.b64decode(
+  s_padded).decode()
+<span class="fn">print</span>(flag)
+<span class="com"># ctf{nopad}</span></code></pre>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:8px">
+      <strong>Формула padding:</strong> <code class="inline">(4 - len(s) % 4) % 4</code>. Обрабатывает все случаи: 0 (не нужно), 2 ('=='), 3 ('=').
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>В задаче 6 — формула для добавления padding — это типичный CTF-трюк.</strong> Запомнить на будущее.</p>
+    <span class="nlabel">Объяснение формулы</span>
+    <p>len(s) % 4 может быть 0, 1, 2, 3. Если 0 — padding не нужен. Если 2 — нужно '=='. Если 3 — нужно '='. Если 1 — это вообще невалидный base64 (такого быть не должно). Формула <code>(4 - len(s) % 4) % 4</code> обрабатывает все случаи.</p>
+    <span class="nlabel">Подчеркнуть</span>
+    <p>В задаче 4 hex-строка при декодировании даёт base64-строку (видим характерный алфавит + '='), которую декодируем второй раз. В задаче 5 — обратный порядок.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут на разбор.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 22 — Решения 7-8 ====================== -->
+<section class="slide" data-slide="22">
+  <div class="corner-mark"><span class="dot"></span>SOLUTIONS</div>
+  <div class="slide-content">
+    <h2>Решения 7–8</h2>
+    <div class="two-col" style="margin-top:6px">
+      <div class="card" style="border-top:3px solid var(--red)">
+        <h3 style="color:var(--red)">Решение 7 · ctf{triple}</h3>
+        <p style="font-size:12px;color:var(--text-muted)">base64 → hex → base64</p>
+<pre class="compact" style="font-size:10.5px"><code><span class="kw">import</span> base64
+s = <span class="str">'NTkzMzUyNmQ2NTMzNTI3...'</span>
+<span class="com"># Шаг 1: base64 decode</span>
+step1 = base64.b64decode(s).decode()
+<span class="fn">print</span>(step1)
+<span class="com"># 5933526d65335279615842735a58303d</span>
+<span class="com"># Шаг 2: hex decode</span>
+step2 = bytes.fromhex(step1).decode()
+<span class="fn">print</span>(step2)
+<span class="com"># Y3Rme3RyaXBsZX0=</span>
+<span class="com"># Шаг 3: base64 decode again</span>
+flag = base64.b64decode(step2).decode()
+<span class="fn">print</span>(flag)  <span class="com"># ctf{triple}</span></code></pre>
+      </div>
+      <div class="card" style="border-top:3px solid var(--red)">
+        <h3 style="color:var(--red)">Решение 8 · ctf{?and?}</h3>
+        <p style="font-size:12px;color:var(--text-muted)">URL-safe base64</p>
+<pre class="compact" style="font-size:10.5px"><code><span class="kw">import</span> base64
+s = <span class="str">'Y3Rmez9hbmQ_fQ=='</span>
+<span class="com"># URL-safe: urlsafe_b64decode</span>
+flag = base64.urlsafe_b64decode(s).decode()
+<span class="fn">print</span>(flag)  <span class="com"># ctf{?and?}</span>
+
+<span class="com"># Альтернатива: заменить символы</span>
+std = s.replace(<span class="str">'-'</span>, <span class="str">'+'</span>).replace(<span class="str">'_'</span>, <span class="str">'/'</span>)
+flag = base64.b64decode(std).decode()</code></pre>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      <strong>Почему URL-safe:</strong> в URL '+' означает пробел, а '/' — разделитель пути. Поэтому придумали вариант с '-' и '_'. Встречается в JWT, в URL query параметрах.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Объяснить на задаче 8:</strong> алфавит base64 содержит '+' и '/', но в URL '+' означает пробел, а '/' — разделитель пути.</p>
+    <span class="nlabel">URL-safe вариант</span>
+    <p>Поэтому придумали URL-safe вариант с '-' и '_'. Встречается в JWT, в URL query параметрах.</p>
+    <span class="nlabel">Подсказка для распознавания</span>
+    <p>Если в base64-подобной строке видите '-' или '_' — это URL-safe. Использовать <code>urlsafe_b64decode</code> или заменить символы.</p>
+    <span class="nlabel">Задача 7</span>
+    <p>Пройти пошагово, на каждом шаге проверяем алфавит результата. base64 → hex → base64. Подчеркнуть: главное — не запутаться в порядке.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 23 — Итоги Занятия 1 ====================== -->
+<section class="slide" data-slide="23">
+  <div class="corner-mark"><span class="dot"></span>RECAP</div>
+  <div class="slide-content">
+    <h2>Итоги Занятия 1</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px">
+      <div>
+        <h4 style="color:var(--violet-soft);margin-bottom:10px">Ключевые выводы</h4>
+        <div class="card card-tight" style="margin-bottom:8px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--violet-soft);font-weight:700">1.</div>
+          <strong>Одно значение — много представлений.</strong> Буква A = 65 = 0x41 = 01000001 = 'QQ==' (base64).
+        </div>
+        <div class="card card-tight" style="margin-bottom:8px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--violet-soft);font-weight:700">2.</div>
+          <strong>Python:</strong> ord/chr/bin/hex/int(x,base) — должны стать рефлексом.
+        </div>
+        <div class="card card-tight" style="margin-bottom:8px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--violet-soft);font-weight:700">3.</div>
+          <strong>Base64</strong> узнаваем по алфавиту [A-Za-z0-9+/] и '=' в конце.
+        </div>
+        <div class="card card-tight">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--violet-soft);font-weight:700">4.</div>
+          <strong>CyberChef</strong> — лучший друг в CTF, особенно Magic операция.
+        </div>
+      </div>
+      <div>
+        <h4 style="color:var(--cyan);margin-bottom:10px">Стратегия CTF</h4>
+        <div class="callout callout-cyan">
+          <ol style="font-size:14px;margin:0;padding-left:18px">
+            <li>Посмотреть на алфавит входной строки</li>
+            <li>Подобрать кодировку по алфавиту</li>
+            <li>Декодировать, посмотреть на результат</li>
+            <li>Повторять, пока не получится осмысленный текст</li>
+          </ol>
+        </div>
+        <div class="card" style="margin-top:10px;border-left:3px solid var(--violet)">
+          <h4 style="color:var(--violet-soft)">В следующий раз</h4>
+          <ul style="font-size:13px">
+            <li>ROT13 и ROT-N</li>
+            <li>Unicode и UTF-8</li>
+            <li>URL-encoding (percent encoding)</li>
+            <li>Brainfuck — эзотерический язык</li>
+            <li>Мини-CTF с 8 задачами на комбо</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Спросить класс:</strong> кто решил все 8? Кто решил только лёгкие? Кто застрял на задаче 6?</p>
+    <span class="nlabel">Подчеркнуть</span>
+    <p>Застревать — нормально, в CTF так и есть. Главное — стратегия определения алфавита. Это навык, который приходит с практикой.</p>
+    <span class="nlabel">Подготовка к занятию 2</span>
+    <p>На следующем занятии начнём с mini-recap и сразу перейдём к ROT13. Потом Unicode/UTF-8, URL-encoding, Brainfuck. Финал — мини-CTF с 8 задачами, где все кодировки смешаны.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут на итоги.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 24 — Section divider Занятие 2 ====================== -->
+<section class="slide" data-slide="24">
+  <div class="corner-mark"><span class="dot"></span>SESSION 2</div>
+  <div class="section-divider slide-content">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--cyan);margin-bottom:10px;letter-spacing:.15em">// СЕССИЯ 2 · ФИНАЛ МОДУЛЯ</div>
+    <div class="section-big">Занятие 2</div>
+    <p style="font-size:24px;color:var(--text);font-weight:500;margin-bottom:14px">ROT13, Unicode/UTF-8, URL-encoding, Brainfuck и мини-CTF</p>
+    <p style="font-size:15px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">~2 часа · 20 слайдов · финал модуля</p>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Кратко.</strong> Сегодня добавим 4 новые кодировки/способа и в конце — мини-CTF с 8 задачами, где все кодировки смешаны.</p>
+    <span class="nlabel">Финальная задача</span>
+    <p>Комбинация 4 кодировок: hex → brainfuck → base64 → URL. Кто решит все — молодец.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>30 секунд на слайд-разделитель.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 25 — Recap ====================== -->
+<section class="slide" data-slide="25">
+  <div class="corner-mark"><span class="dot"></span>RECAP</div>
+  <div class="slide-content">
+    <h2>Что было <span class="accent-c">в прошлый раз</span></h2>
+    <div class="stat-row" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat">
+        <div class="stat-num">≠</div>
+        <div class="stat-label">Кодировка ≠ шифрование — нет секретного ключа</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num cyan">128</div>
+        <div class="stat-label">ASCII: 128 символов. 'A'=65, 'a'=97, '0'=48</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num green">b64</div>
+        <div class="stat-label">Base64: A-Za-z0-9+/, padding '=', b64encode/b64decode</div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:16px">
+      <strong>Быстрый вопрос классу:</strong> Что даст <code class="inline" style="font-size:18px">chr(0x41)</code>?
+    </div>
+    <details style="margin-top:10px">
+      <summary>Показать ответ</summary>
+      <div class="bf-output">0x41 = 65 = 'A'</div>
+    </details>
+    <div class="callout callout-cyan" style="margin-top:14px">
+      Сегодня добавим: ROT13, Unicode/UTF-8, URL-encoding, Brainfuck. А в конце — мини-CTF с 8 задачами.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Быстрый recap, 3-5 минут.</strong> Не углубляться — просто освежить память.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p><code>chr(0x41)</code> — пусть кто-то ответит вслух. <strong>Ответ:</strong> 0x41 = 65 = 'A'. Если помнят — отлично, если нет — напомнить.</p>
+    <span class="nlabel">Переход</span>
+    <p>После этого — переходим к ROT13.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 26 — ROT13 и ROT-N ====================== -->
+<section class="slide" data-slide="26">
+  <div class="corner-mark"><span class="dot"></span>ROT13</div>
+  <div class="slide-content">
+    <h2>ROT13 и ROT-N</h2>
+    <p class="lead">ROT13 — сдвиг каждой буквы на 13 позиций в алфавите. Особенность: применён дважды — даёт исходный текст (потому что 26 = 2 × 13). ROT-N — обобщение (сдвиг на N).</p>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Визуальный пример</h4>
+<pre style="margin-top:6px"><code><span class="str">'hello'</span>  <span class="kw">--ROT13--&gt;</span>  <span class="str">'uryyb'</span>
+<span class="str">'uryyb'</span>  <span class="kw">--ROT13--&gt;</span>  <span class="str">'hello'</span></code></pre>
+        </div>
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">Исторический факт</h4>
+          <p style="font-size:14px">ROT13 использовался в Usenet (1980-е) для скрытия спойлеров к фильмам и шуток.</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="callout">
+          <strong>ROT13 технически — шифр Цезаря со сдвигом 13.</strong> Но поскольку ключ всегда 13 и всем известен — на практике работает как кодировка. В CTF относят к "псевдошифрам".
+        </div>
+        <div class="card">
+          <h4 style="color:var(--cyan)">Почему 13?</h4>
+          <p style="font-size:14px">26 букв в алфавите, 26 = 2 × 13. Поэтому ROT13(ROT13(s)) = s. Симметричность — только при N=13.</p>
+          <p style="font-size:13px;margin-top:6px">Для русского (33 буквы) симметричного N нет. ROT-N для русского — не симметричен.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Объяснить идею сдвига:</strong> A→N, B→O, ..., M→Z, N→A (зацикливание).</p>
+    <span class="nlabel">ROT13 = ROT-N с N=13</span>
+    <p>Симметричность (encode = decode) — это удобно, но встречается только при N=13 (для алфавита длиной 26).</p>
+    <span class="nlabel">Для других N</span>
+    <p>encode и decode разные. Например, ROT5: 'hello' → 'mjqqt', обратно нужен ROT21.</p>
+    <span class="nlabel">ROT для русского</span>
+    <p>ROT33 (33 буквы), но не симметричен. В CTF встречается редко.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 27 — ROT13 в Python ====================== -->
+<section class="slide" data-slide="27">
+  <div class="corner-mark"><span class="dot"></span>PYTHON</div>
+  <div class="slide-content">
+    <h2>ROT13 в Python и онлайн</h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="compact"><code><span class="com"># Способ 1: codecs module (built-in)</span>
+<span class="kw">import</span> codecs
+&gt;&gt;&gt; codecs.encode(<span class="str">'hello'</span>, <span class="str">'rot_13'</span>)
+<span class="str">'uryyb'</span>
+&gt;&gt;&gt; codecs.encode(<span class="str">'uryyb'</span>, <span class="str">'rot_13'</span>)
+<span class="str">'hello'</span>   <span class="com"># ROT13 обратим сам собой</span>
+
+<span class="com"># Способ 2: maketrans + translate (любой ROT-N)</span>
+<span class="kw">import</span> string
+<span class="kw">def</span> rot_n(s, n):
+    alphabet = string.ascii_lowercase
+    shifted = alphabet[n:] + alphabet[:n]
+    table = str.maketrans(
+      alphabet + alphabet.upper(),
+      shifted + shifted.upper())
+    <span class="kw">return</span> s.translate(table)
+
+&gt;&gt;&gt; rot_n(<span class="str">'hello'</span>, <span class="num">13</span>)  <span class="com"># 'uryyb'</span>
+&gt;&gt;&gt; rot_n(<span class="str">'hello'</span>, <span class="num">5</span>)   <span class="com"># 'mjqqt'  (ROT5)</span>
+
+<span class="com"># Брутфорс всех 25 ROT-N:</span>
+<span class="kw">for</span> n <span class="kw">in</span> range(<span class="num">1</span>, <span class="num">26</span>):
+    <span class="fn">print</span>(n, rot_n(<span class="str">'uryyb'</span>, n))</code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">codecs.encode — самый простой</h4>
+          <p style="font-size:14px">Для ROT13: <code class="inline">codecs.encode(s, 'rot_13')</code>.</p>
+        </div>
+        <div class="callout">
+          Для других N или для брутфорса — используйте <code class="inline">str.maketrans</code> + <code class="inline">str.translate</code>.
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">CyberChef tip</span>
+          Операция <strong>"ROT13 Brute Force"</strong> выводит все 25 вариантов сразу — удобно для распознавания осмысленного текста.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--cyan)">Важно</h4>
+          <p style="font-size:13px">ROT13 работает только с буквами. Цифры и знаки остаются без изменений.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Показать вживую:</strong> <code>codecs.encode('hello', 'rot_13')</code> → 'uryyb'.</p>
+    <span class="nlabel">codecs</span>
+    <p>Объяснить, что 'rot_13' — это название кодека в Python. Есть также 'base64', 'hex' и т.д.</p>
+    <span class="nlabel">Подчеркнуть</span>
+    <p>ROT13 работает только с буквами (цифры и знаки остаются). Для брутфорса ROT-N — проходим циклом 1-25, ищем читаемый текст. Это базовый CTF-приём.</p>
+    <span class="nlabel">rot_n функция</span>
+    <p>Пройти по функции rot_n: string.ascii_lowercase = 'abc...z'. shifted = alphabet[n:] + alphabet[:n] — это циклический сдвиг. maketrans строит таблицу замены, translate применяет.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 28 — Unicode ====================== -->
+<section class="slide" data-slide="28">
+  <div class="corner-mark"><span class="dot"></span>UNICODE</div>
+  <div class="slide-content">
+    <h2>Unicode — <span class="accent-v">что это</span></h2>
+    <p class="lead">Unicode — таблица, в которой каждому символу всех языков мира присвоен номер (код-пункт). На сегодня — более 150 000 символов и растёт.</p>
+    <table style="margin-top:6px">
+      <thead><tr><th>Символ</th><th>Код-пункт</th><th>Описание</th></tr></thead>
+      <tbody>
+        <tr><td style="font-size:20px">A</td><td><code>U+0041</code></td><td>Латинская заглавная A</td></tr>
+        <tr><td style="font-size:20px">ф</td><td><code>U+0444</code></td><td>Кириллическая строчная ф</td></tr>
+        <tr><td style="font-size:20px">€</td><td><code>U+20AC</code></td><td>Знак евро</td></tr>
+        <tr><td style="font-size:20px">😀</td><td><code>U+1F600</code></td><td>Улыбающееся лицо (эмодзи)</td></tr>
+        <tr><td style="font-size:20px">中</td><td><code>U+4E2D</code></td><td>Китайский иероглиф "середина"</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      <strong>Unicode = таблица (что).</strong> UTF-8, UTF-16, UTF-32 = кодировки (как). Unicode говорит: "ф — это номер 1092". UTF-8 говорит: "1092 хранится как байты 0xd1 0x84".
+    </div>
+    <div class="tip-box" style="margin-top:8px">
+      <span class="tip-h">Аналогия</span>
+      Unicode — это словарь (слово = номер), UTF-8 — это формат файла словаря. В CTF: если видим странную последовательность байтов с 0xd0-0xd1 для кириллицы — это UTF-8.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Главное понимать:</strong> Unicode — это conceptual mapping, а UTF-8/16/32 — конкретные способы записи в байтах.</p>
+    <span class="nlabel">Аналогия</span>
+    <p>Unicode — это словарь (слово = номер), UTF-8 — это формат файла словаря.</p>
+    <span class="nlabel">В CTF</span>
+    <p>Если видим странную последовательность байтов с 0xd0-0xd1 для кириллицы — это UTF-8.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 29 — UTF-8 как кодируется ====================== -->
+<section class="slide" data-slide="29">
+  <div class="corner-mark"><span class="dot"></span>UTF-8</div>
+  <div class="slide-content">
+    <h2>UTF-8 — <span class="accent-c">как кодируется</span></h2>
+    <p class="lead">UTF-8 — кодировка переменной длины. Один символ может занимать 1, 2, 3 или 4 байта.</p>
+<pre class="compact" style="margin-top:6px"><code>1 байт (ASCII):    <span class="accent-c">0xxxxxxx</span>                             (0-127)
+2 байта:           <span class="accent-v">110xxxxx</span> <span class="accent-c">10xxxxxx</span>                  (128-2047)
+3 байта:           <span class="accent-v">1110xxxx</span> <span class="accent-c">10xxxxxx 10xxxxxx</span>        (2048-65535)
+4 байта:           <span class="accent-v">11110xxx</span> <span class="accent-c">10xxxxxx 10xxxxxx 10xxxxxx</span>  (65536+)</code></pre>
+    <div class="two-col" style="margin-top:8px">
+      <div class="col">
+        <table style="font-size:13px">
+          <thead><tr><th>Символ</th><th>Код-пункт</th><th>UTF-8 байты</th></tr></thead>
+          <tbody>
+            <tr><td style="font-size:18px">A</td><td><code>U+0041</code></td><td><code>41</code> (1 байт)</td></tr>
+            <tr><td style="font-size:18px">ф</td><td><code>U+0444</code></td><td><code>d1 84</code> (2 байта)</td></tr>
+            <tr><td style="font-size:18px">€</td><td><code>U+20AC</code></td><td><code>e2 82 ac</code> (3 байта)</td></tr>
+            <tr><td style="font-size:18px">😀</td><td><code>U+1F600</code></td><td><code>f0 9f 98 80</code> (4 байта)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col">
+        <div class="callout">
+          <strong>Smart design fact:</strong> Все ASCII символы (0-127) в UTF-8 = 1 байт и идентичны ASCII. Поэтому UTF-8 обратно совместим с ASCII.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--cyan)">Prefix bits</h4>
+          <p style="font-size:13px"><code class="inline">10xxxxxx</code> — continuation byte (продолжение).</p>
+          <p style="font-size:13px;margin-top:4px"><code class="inline">110xxxxx</code> — начало 2-байтной последовательности.</p>
+          <p style="font-size:13px;margin-top:4px">Это позволяет синхронизироваться в любой позиции потока байтов.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Объяснить, почему префиксные биты важны.</strong></p>
+    <span class="nlabel">10xxxxxx — маркер continuation byte</span>
+    <p>Если видим байт 110xxxxx — знаем, что это начало 2-байтной последовательности. Это позволяет синхронизироваться в любой позиции потока байтов (не нужно искать начало).</p>
+    <span class="nlabel">Обратная совместимость</span>
+    <p>ASCII символы (0-127) в UTF-8 = 1 байт и идентичны ASCII. Поэтому любой ASCII-текст — это валидный UTF-8.</p>
+    <span class="nlabel">В CTF</span>
+    <p>Иногда данные хранятся в UTF-16 (каждый символ 2 или 4 байта, много нулевых байтов) — узнаём по pattern 0xXX 0x00.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 30 — Python и UTF-8 ====================== -->
+<section class="slide" data-slide="30">
+  <div class="corner-mark"><span class="dot"></span>PYTHON</div>
+  <div class="slide-content">
+    <h2>Python и UTF-8</h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="compact"><code><span class="com"># encode: str -> bytes (UTF-8 по умолчанию)</span>
+&gt;&gt;&gt; <span class="str">'флаг'</span>.encode(<span class="str">'utf-8'</span>)
+b<span class="str">'\xd1\x84\xd0\xbb\xd0\xb0\xd0\xb3'</span>
+
+<span class="com"># decode: bytes -> str</span>
+&gt;&gt;&gt; b<span class="str">'\xd1\x84...'</span>.decode(<span class="str">'utf-8'</span>)
+<span class="str">'флаг'</span>
+
+<span class="com"># Код-пункт символа</span>
+&gt;&gt;&gt; ord(<span class="str">'ф'</span>)       <span class="com"># 1092</span>
+&gt;&gt;&gt; hex(ord(<span class="str">'ф'</span>))  <span class="com"># '0x444'</span>
+&gt;&gt;&gt; <span class="str">'ф'</span>.encode(<span class="str">'unicode_escape'</span>)
+<span class="com"># b'\\u0444'</span>
+
+<span class="com"># ЗАБАВНО: эмодзи могут быть составными</span>
+&gt;&gt;&gt; len(<span class="str">'🇷🇺'</span>)    <span class="com"># 7 (на самом деле!)</span>
+<span class="com"># 2 региональных индикатора</span>
+<span class="com"># U+1F1F7 + U+1F1FA</span>
+
+<span class="com"># Комбинирующие диакритики</span>
+&gt;&gt;&gt; <span class="str">'a'</span> + <span class="str">'\u030a'</span>   <span class="com"># 'å'</span></code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">encode / decode — основа</h4>
+          <p style="font-size:14px">Все строки в Python 3 — Unicode. Чтобы получить байты — <code class="inline">encode()</code>. Чтобы из байтов сделать строку — <code class="inline">decode()</code>.</p>
+        </div>
+        <div class="callout">
+          <strong>ord() даёт код-пункт</strong> (Unicode номер), а не байты. 'a'=1 байт, 'ф'=2 байта, '😀'=4 байта — но <code class="inline">len()==1</code> для всех.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--cyan)">Подводные камни</h4>
+          <p style="font-size:13px">Составные эмодзи (🇷🇺) и комбинирующие диакритики — где 1 "символ" = несколько code-пунктов.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Это важный слайд для понимания различий строк и байтов в Python 3.</strong></p>
+    <span class="nlabel">Все строки — Unicode</span>
+    <p>Чтобы получить байты — encode(). Чтобы из байтов сделать строку — decode().</p>
+    <span class="nlabel">Показать в REPL</span>
+    <p><code>'флаг'.encode('utf-8')</code> → видим байты b'\xd1\x84\xd0\xbb\xd0\xb0\xd0\xb3'. <code>len('флаг')</code> = 4 (4 code-пункта), но <code>len('флаг'.encode())</code> = 8 (8 байтов).</p>
+    <span class="nlabel">Подчеркнуть</span>
+    <p>'a' (1 байт) vs 'ф' (2 байта) vs '😀' (4 байта) — но все len()==1 в Python (считаются code-points, а не байты).</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 31 — URL-encoding ====================== -->
+<section class="slide" data-slide="31">
+  <div class="corner-mark"><span class="dot"></span>URL-ENCODING</div>
+  <div class="slide-content">
+    <h2>URL-encoding <span class="muted">(percent encoding)</span></h2>
+    <p class="lead">Способ записать любые символы в URL, используя только ASCII. Небезопасные символы заменяются на '%' + 2 hex-символа.</p>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Где встречается</h4>
+          <ul style="font-size:13px">
+            <li>URL с параметрами: <code class="inline">example.com/search?q=ctf%7Btest%7D</code></li>
+            <li>Web-формы (POST data)</li>
+            <li>HTTP cookies</li>
+            <li>API JSON в query strings</li>
+          </ul>
+        </div>
+        <div class="callout">
+          <strong>Unreserved chars</strong> (не кодируются): A-Z, a-z, 0-9, <code>-_.~</code>
+        </div>
+      </div>
+      <div class="col">
+        <table style="font-size:13px">
+          <thead><tr><th>Символ</th><th>URL-encoded</th></tr></thead>
+          <tbody>
+            <tr><td>пробел</td><td><code>%20</code> (или <code>+</code> в form-data)</td></tr>
+            <tr><td>/</td><td><code>%2F</code></td></tr>
+            <tr><td>?</td><td><code>%3F</code></td></tr>
+            <tr><td>=</td><td><code>%3D</code></td></tr>
+            <tr><td>{</td><td><code>%7B</code></td></tr>
+            <tr><td>}</td><td><code>%7D</code></td></tr>
+            <tr><td>!</td><td><code>%21</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      '%' — индикатор escape. За ним ОБЯЗАТЕЛЬНО 2 hex-символа. Если видим строку с %XX — это URL-encoding. Иногда — многослойный: 2-3 раза подряд.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Подчеркнуть:</strong> '%' — это индикатор escape. За ним ОБЯЗАТЕЛЬНО 2 hex-символа.</p>
+    <span class="nlabel">Где встречается в CTF</span>
+    <p>Часто в логах или в cookies. Если видим строку с %XX — это URL-encoding.</p>
+    <span class="nlabel">Многослойный URL-encoding</span>
+    <p>Иногда — 2-3 раза URL-encoded подряд. Например, %257B = %7B после первого URL-decode, и '{' после второго.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 32 — URL-encoding в Python ====================== -->
+<section class="slide" data-slide="32">
+  <div class="corner-mark"><span class="dot"></span>PYTHON</div>
+  <div class="slide-content">
+    <h2>URL-encoding в Python</h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="compact"><code><span class="kw">from</span> urllib.parse <span class="kw">import</span> quote, unquote
+
+<span class="com"># Кодирование</span>
+&gt;&gt;&gt; quote(<span class="str">'ctf{test}'</span>)
+<span class="str">'ctf%7Btest%7D'</span>
+
+<span class="com"># По умолчанию quote() НЕ кодирует '/'</span>
+&gt;&gt;&gt; quote(<span class="str">'path/to/file'</span>)
+<span class="str">'path/to/file'</span>
+
+<span class="com"># Чтобы закодировать всё, включая /:</span>
+&gt;&gt;&gt; quote(<span class="str">'path/to/file'</span>, safe=<span class="str">''</span>)
+<span class="str">'path%2Fto%2Ffile'</span>
+
+<span class="com"># Декодирование</span>
+&gt;&gt;&gt; unquote(<span class="str">'ctf%7Btest%7D'</span>)
+<span class="str">'ctf{test}'</span>
+
+<span class="com"># Многослойный URL-encoding:</span>
+&gt;&gt;&gt; s = <span class="str">'ctf%257Bdouble%257D'</span>
+&gt;&gt;&gt; unquote(s)
+<span class="str">'ctf%7Bdouble%7D'</span>
+&gt;&gt;&gt; unquote(unquote(s))
+<span class="str">'ctf{double}'</span></code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--red)">Главный подводный камень</h4>
+          <p style="font-size:14px"><code class="inline">quote(s, safe='/')</code> — по умолчанию не трогает /. Для полной кодировки используйте <code class="inline">safe=''</code>.</p>
+        </div>
+        <div class="callout">
+          <code class="inline">unquote</code> снимает один слой кодирования. Для многослойного — применяем несколько раз.
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Брутфорс многослойного</span>
+          Цикл <code class="inline">while</code>: пока в строке есть '%', применяем <code class="inline">unquote()</code>.
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">CyberChef</span>
+          Операция "URL Decode" — то же самое. Magic сам применит столько раз, сколько нужно.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Главный подводный камень:</strong> safe='/' по умолчанию. Если в флаге есть '/' (например ctf{a/b}), он останется.</p>
+    <span class="nlabel">Для полной кодировки</span>
+    <p>Использовать safe=''. Тогда '/' тоже станет %2F.</p>
+    <span class="nlabel">Брутфорс многослойного URL-encoding</span>
+    <p>Цикл while: пока в строке есть '%', применяем unquote().</p>
+    <span class="nlabel">CyberChef</span>
+    <p>Операция "URL Decode" — то же самое. Magic операция авто-применяет多次.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 33 — Brainfuck что это ====================== -->
+<section class="slide" data-slide="33">
+  <div class="corner-mark"><span class="dot"></span>BRAINFUCK</div>
+  <div class="slide-content">
+    <h2>Brainfuck — <span class="accent-v">что это</span></h2>
+    <p class="lead">Эзотерический язык программирования, придуман в 1993 году (Urban Müller). Всего 8 команд, но Тьюринг-полный. В CTF — частая misc-головоломка.</p>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <table style="font-size:14px">
+          <thead><tr><th>Команда</th><th>Действие</th></tr></thead>
+          <tbody>
+            <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:18px">&gt;</td><td>сдвинуть указатель вправо</td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:18px">&lt;</td><td>сдвинуть указатель влево</td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:18px">+</td><td>увеличить текущую ячейку на 1</td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:18px">-</td><td>уменьшить текущую ячейку на 1</td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:18px">.</td><td>вывести текущую ячейку как символ</td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:18px">,</td><td>прочитать символ в текущую ячейку</td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:18px">[</td><td>если ячейка 0, перейти к ]</td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:18px">]</td><td>если ячейка не 0, вернуться к [</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">Mental model</h4>
+          <p style="font-size:14px">Лента на 30 000 ячеек, указатель, циклы <code class="inline">[ ]</code> повторяются пока ячейка не 0.</p>
+          <p style="font-size:14px;margin-top:6px">Все остальные символы (пробелы, переводы строк) — игнорируются.</p>
+        </div>
+        <div class="callout">
+          Простой пример: 65 плюсов и точка = вывод 'A'. Циклы позволяют умножать: <code class="inline">5 +, потом [&gt;+++++&lt;-]</code> = 5 × 5 = 25 в следующей ячейке.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--cyan)">В CTF</h4>
+          <p style="font-size:13px">Обычно программы небольшие — выводят флаг или закодированную строку (которую надо декодировать дальше).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Объяснить концепцию:</strong> язык издевается над программистом (отсюда название). Но в нём можно написать любую программу — он Тьюринг-полный.</p>
+    <span class="nlabel">Простой пример</span>
+    <p>65 плюсов и точка = вывод 'A'. Потому что 65 = ASCII код 'A'.</p>
+    <span class="nlabel">Циклы позволяют умножать</span>
+    <p>Например, 5 +, потом [>+++++<-] = 5 × 5 = 25 в следующей ячейке. Это базовый паттерн для эффективного программирования на brainfuck.</p>
+    <span class="nlabel">В CTF</span>
+    <p>Обычно программы небольшие — выводят флаг или закодированную строку. Если выводит base64/hex — декодируйте дальше.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 34 — Brainfuck инструменты ====================== -->
+<section class="slide" data-slide="34">
+  <div class="corner-mark"><span class="dot"></span>BF · TOOLS</div>
+  <div class="slide-content">
+    <h2>Brainfuck — интерпретатор и тулзы</h2>
+    <div class="two-col">
+      <div class="col">
+        <h4 style="color:var(--violet-soft)">Python интерпретатор (~20 строк)</h4>
+<pre class="compact" style="font-size:10.5px"><code><span class="kw">def</span> brainfuck(code, input_data=<span class="str">''</span>):
+    tape = [<span class="num">0</span>] * <span class="num">30000</span>
+    ptr = pc = <span class="num">0</span>
+    output = []
+    <span class="com"># Precompute jump positions</span>
+    jumps, stack = {}, []
+    <span class="kw">for</span> i, c <span class="kw">in</span> enumerate(code):
+        <span class="kw">if</span> c == <span class="str">'['</span>: stack.append(i)
+        <span class="kw">elif</span> c == <span class="str">']'</span>:
+            j = stack.pop()
+            jumps[i] = j; jumps[j] = i
+    <span class="kw">while</span> pc &lt; len(code):
+        c = code[pc]
+        <span class="kw">if</span>   c == <span class="str">'&gt;'</span>: ptr += <span class="num">1</span>
+        <span class="kw">elif</span> c == <span class="str">'&lt;'</span>: ptr -= <span class="num">1</span>
+        <span class="kw">elif</span> c == <span class="str">'+'</span>: tape[ptr] = (tape[ptr]+<span class="num">1</span>) % <span class="num">256</span>
+        <span class="kw">elif</span> c == <span class="str">'-'</span>: tape[ptr] = (tape[ptr]-<span class="num">1</span>) % <span class="num">256</span>
+        <span class="kw">elif</span> c == <span class="str">'.'</span>: output.append(chr(tape[ptr]))
+        <span class="kw">elif</span> c == <span class="str">','</span>:
+            tape[ptr] = ord(input_data[<span class="num">0</span>]) <span class="kw">if</span> input_data <span class="kw">else</span> <span class="num">0</span>
+            input_data = input_data[<span class="num">1</span>:]
+        <span class="kw">elif</span> c == <span class="str">'['</span> <span class="kw">and</span> tape[ptr] == <span class="num">0</span>: pc = jumps[pc]
+        <span class="kw">elif</span> c == <span class="str">']'</span> <span class="kw">and</span> tape[ptr] != <span class="num">0</span>: pc = jumps[pc]
+        pc += <span class="num">1</span>
+    <span class="kw">return</span> <span class="str">''</span>.join(output)</code></pre>
+      </div>
+      <div class="col">
+        <h4 style="color:var(--cyan)">Онлайн-тулы</h4>
+        <ul class="link-list" style="font-size:13px">
+          <li><a href="https://copy.sh/brainfuck/">copy.sh/brainfuck</a><br><span style="color:var(--text-muted)">удобный интерпретатор с visualizer</span></li>
+          <li><a href="https://dcode.fr/brainfuck">dcode.fr/brainfuck</a><br><span style="color:var(--text-muted)">интерфейс с кнопкой "Decode"</span></li>
+          <li><a href="https://bf.doleczek.pl/">bf.doleczek.pl</a><br><span style="color:var(--text-muted)">с пошаговым выполнением</span></li>
+        </ul>
+        <div class="callout callout-cyan">
+          <strong>Совет.</strong> В CTF проще вставить код в онлайн-интерпретатор, чем писать свой. Но знать, как он работает внутри — обязательно.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">Пример: вывод 'Hi'</h4>
+<pre class="compact" style="font-size:10px"><code>++++++++[&gt;++++[&gt;++&gt;+++&gt;+++&gt;+&lt;&lt;&lt;&lt;-]
+&gt;+&gt;+&gt;-]&gt;&gt;+.&gt;++..</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Совет:</strong> закладка copy.sh/brainfuck. Это самый удобный онлайн-интерпретатор.</p>
+    <span class="nlabel">Показать вживую</span>
+    <p>Вставить простую программу (например <code>++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>-]>>+.>++..</code> — выводит 'Hi'), нажать Run.</p>
+    <span class="nlabel">Если в CTF попалась программа на brainfuck</span>
+    <p>Это почти всегда выводит флаг или закодированную строку. Если выводит base64/hex — декодируйте дальше.</p>
+    <span class="nlabel">Про интерпретатор на Python</span>
+    <p>Пройти по коду: tape = [0]*30000 — лента. ptr — указатель. pc — program counter. jumps — словарь для быстрого перехода по [ ]. Цикл while идёт по командам.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 35 — Разбор примера вместе ====================== -->
+<section class="slide" data-slide="35">
+  <div class="corner-mark"><span class="dot"></span>DEMO</div>
+  <div class="slide-content">
+    <h2>Разбираем задачу <span class="accent-c">вместе</span></h2>
+    <div class="callout" style="margin-bottom:8px">
+      <strong>Задача.</strong> Дано: <code class="inline">L3Ezr3WiqS9vAwEsL29gLz99</code>. Найти флаг.
+    </div>
+    <div class="two-col">
+      <div class="col">
+        <h4 style="color:var(--violet-soft)">Пошаговый разбор</h4>
+        <ol class="step-list">
+          <li>Алфавит: смесь регистров + цифры + '/' + '=' → похоже на base64. Но выглядит "случайно" — может быть ROT13 от base64</li>
+          <li>Применяем ROT13 (CyberChef или <code class="inline">codecs.encode</code>): получаем <code class="inline">Y3Rme3JvdF9iNjRfY29tYm99</code></li>
+          <li>'Y3Rm' — знакомый паттерн! <code class="inline">Y3Rm</code> = base64('ctf'). Это base64</li>
+          <li>Декодируем base64 → <code class="inline">ctf{rot_b64_combo}</code></li>
+        </ol>
+        <div class="callout callout-cyan">
+          <strong>Стратегия:</strong> при смешанной строке, которая выглядит как base64, но даёт мусор — попробовать ROT13 first. Это самый частый комбо в CTF.
+        </div>
+      </div>
+      <div class="col">
+        <h4 style="color:var(--cyan)">Решение в Python</h4>
+<pre class="compact"><code><span class="kw">import</span> codecs, base64
+
+s = <span class="str">'L3Ezr3WiqS9vAwEsL29gLz99'</span>
+
+<span class="com"># Шаг 1: ROT13</span>
+step1 = codecs.encode(s, <span class="str">'rot_13'</span>)
+<span class="fn">print</span>(step1)
+<span class="com"># Y3Rme3JvdF9iNjRfY29tYm99</span>
+
+<span class="com"># Шаг 2: base64 decode</span>
+flag = base64.b64decode(step1).decode()
+<span class="fn">print</span>(flag)
+<span class="com"># ctf{rot_b64_combo}</span>
+
+<span class="com"># В CyberChef:</span>
+<span class="com"># Recipe: ROT13 -&gt; From Base64</span>
+<span class="com"># Bake</span></code></pre>
+        <div class="tip-box" style="margin-top:8px">
+          <span class="tip-h">Подсказка</span>
+          'Y3Rm' в начале base64-строки = подпись base64 от 'ctf'. Мощный индикатор.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Подчеркнуть стратегию:</strong> при смешанной строке, которая выглядит как base64, но даёт мусор — попробовать ROT13 first. Это самый частый комбо в CTF.</p>
+    <span class="nlabel">Пройти вживую в CyberChef</span>
+    <p>Построить Recipe: ROT13 → From Base64. Нажать Bake. Увидеть результат.</p>
+    <span class="nlabel">Объяснить паттерн 'Y3Rm'</span>
+    <p>'Y3Rm' в начале base64-строки — это подпись base64 от 'ctf'. Этот pattern — мощный индикатор. Если видим 'Y3Rm' в base64-подобной строке, почти всегда это флаг ctf{...}.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 36 — Мини-CTF обзор ====================== -->
+<section class="slide" data-slide="36">
+  <div class="corner-mark"><span class="dot"></span>MINI-CTF</div>
+  <div class="slide-content">
+    <h2>Мини-CTF — <span class="accent-v">финал модуля</span></h2>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num">8</div><div class="stat-label">задач</div></div>
+      <div class="stat"><div class="stat-num cyan">60</div><div class="stat-label">минут</div></div>
+      <div class="stat"><div class="stat-num green">ctf{...}</div><div class="stat-label">формат флага</div></div>
+      <div class="stat"><div class="stat-num">3+3+2</div><div class="stat-label">easy / medium / hard</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px">
+      <div class="card">
+        <h4 style="color:var(--green)">3 × Easy</h4>
+        <p style="font-size:13px">одна кодировка из нового (ROT13, URL, Brainfuck)</p>
+        <h4 style="color:var(--amber);margin-top:8px">3 × Medium</h4>
+        <p style="font-size:13px">две кодировки из занятий 1 и 2</p>
+        <h4 style="color:var(--red);margin-top:8px">2 × Hard</h4>
+        <p style="font-size:13px">три+ кодировки. Финальная — комбинация 4</p>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--cyan)">Правила</h4>
+        <ul style="font-size:13px">
+          <li>Используй все инструменты: Python, CyberChef, dcode.fr</li>
+          <li>Если застрял на 10 минут — переходи к следующей</li>
+          <li>Финальная задача 8 — самая сложная, оставь себе 15 минут</li>
+          <li>Бонус: кто решит все 8 — придумай свою задачу с 3+ кодировками</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Это настоящий CTF-опыт. 60 минут, режим "соревнования" — кто первый решит все. После — разбор всех задач.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Финальный блок — это настоящий CTF опыт.</strong> 60 минут, режим "соревнования" — кто первый решит все.</p>
+    <span class="nlabel">Поведение учителя</span>
+    <p>Ходить по классу, подсказывать стратегию (определяй алфавит, пробуй CyberChef Magic). Не давать готовые ответы.</p>
+    <span class="nlabel">После 60 минут</span>
+    <p>Разбор всех задач. Решения на слайдах 40-42.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>2 минуты на обзор, затем 60 минут практики.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 37 — Мини-CTF задачи 1-3 (Easy) ====================== -->
+<section class="slide" data-slide="37">
+  <div class="corner-mark"><span class="dot"></span>CTF · EASY</div>
+  <div class="slide-content">
+    <h2>Мини-CTF · Задачи 1–3 <span class="badge badge-easy">Easy</span></h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 1</span></div>
+        <div class="task-title">Декодируйте ROT13:</div>
+<pre style="font-size:11px"><code>pgs{ebg13}</code></pre>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 2</span></div>
+        <div class="task-title">Декодируйте URL-encoded строку:</div>
+<pre style="font-size:11px"><code>ctf%7Burl%7D</code></pre>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 3</span></div>
+        <div class="task-title">Что выводит эта программа на Brainfuck? Найдите флаг:</div>
+<pre class="scroll" style="font-size:9px;max-height:160px;line-height:1.3"><code>+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.--------------------------------------------------------------------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------------------------------------------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.---------------------------------------------------------------------------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.--------------------------------------------------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------------------------------------------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.-----------------------------------------------------------------------------------------------------------------------------</code></pre>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Все три — простые. ROT13 обратим. URL-decode тривиальный. Для brainfuck — вставить в copy.sh, нажать Run.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Все три — простые.</strong> ROT13 обратим сам собой. URL-decode тривиальный. Для brainfuck — вставить в copy.sh/brainfuck, нажать Run, получить вывод.</p>
+    <span class="nlabel">Подсказка для brainfuck</span>
+    <p>Можно не анализировать код, просто запустить. Это допустимо в CTF.</p>
+    <span class="nlabel">Ожидаемые результаты</span>
+    <ul>
+      <li>Задача 1: ctf{rot13}</li>
+      <li>Задача 2: ctf{url}</li>
+      <li>Задача 3: ctf{bf}</li>
+    </ul>
+    <span class="nlabel">Тайминг</span>
+    <p>~10-15 минут на эти 3 задачи.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 38 — Мини-CTF задачи 4-6 (Medium) ====================== -->
+<section class="slide" data-slide="38">
+  <div class="corner-mark"><span class="dot"></span>CTF · MEDIUM</div>
+  <div class="slide-content">
+    <h2>Мини-CTF · Задачи 4–6 <span class="badge badge-medium">Medium</span></h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 4</span></div>
+        <div class="task-title">Найдите флаг (ROT13 от base64):</div>
+<pre style="font-size:11px"><code>L3Ezr2V2AUWiqU0=</code></pre>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 5</span></div>
+        <div class="task-title">Найдите флаг (URL-encoded base64):</div>
+<pre style="font-size:11px"><code>Y3Rme3VybGI2NH0%3D</code></pre>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 6</span></div>
+        <div class="task-title">Программа на Brainfuck выводит hex-строку. Декодируйте её и найдите флаг:</div>
+<pre class="scroll" style="font-size:9px;max-height:160px;line-height:1.3"><code>++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------+++++++++++++++++++++++++++++++++++++++++++++++++++.---------------------------------------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++.-------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++.----------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++.-------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.--------------------------------------------------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++.--------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++.--------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++.------------------------------------------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++.-----------------------------------------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++.-------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++.--------------------------------------------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++.-------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.----------------------------------------------------------------------------------------------------</code></pre>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:8px">
+      <strong>Стратегия:</strong> всегда декодируй в правильном порядке. Задача 4: ROT13 → base64. Задача 5: URL → base64. Задача 6: brainfuck → hex.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Задача 4 — это ROT13 + base64</strong>, как в нашем разборе (но другое значение).</p>
+    <span class="nlabel">Задача 5 — порядок URL → base64</span>
+    <p>Сначала URL-decode (снимает %3D → =), потом base64-decode. Если сделать наоборот — будет ошибка.</p>
+    <span class="nlabel">Задача 6 —两层编码 через brainfuck как обёртку</span>
+    <p>Вставить BF в copy.sh, получить hex, потом bytes.fromhex().</p>
+    <span class="nlabel">Стратегия</span>
+    <p>Всегда декодируй в правильном порядке. Сначала определяй самую внешнюю кодировку.</p>
+    <span class="nlabel">Ожидаемые результаты</span>
+    <ul>
+      <li>Задача 4: ctf{b64rot}</li>
+      <li>Задача 5: ctf{urlb64}</li>
+      <li>Задача 6: ctf{bfhex}</li>
+    </ul>
+    <span class="nlabel">Тайминг</span>
+    <p>~20 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 39 — Мини-CTF задачи 7-8 (Hard) ====================== -->
+<section class="slide" data-slide="39">
+  <div class="corner-mark"><span class="dot"></span>CTF · HARD</div>
+  <div class="slide-content">
+    <h2>Мини-CTF · Задачи 7–8 <span class="badge badge-hard">Hard</span></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;flex:1;min-height:0">
+      <div class="task-card">
+        <div><span class="badge badge-hard">hard</span><span class="task-num">Задача 7</span></div>
+        <div class="task-title">Найдите флаг. ROT13 от hex-закодированной UTF-16LE строки:</div>
+<pre class="scroll" style="font-size:10px;max-height:120px"><code>6300740066007o007500740066003
+100360072006s0074007q00</code></pre>
+        <div class="tip-box"><span class="tip-h">Подсказка</span>ROT13 применяется только к a-z. Hex состоит из 0-9a-f. Поэтому ROT13 превратил a-f в n-s. Повторный ROT13 вернёт исходный hex.</div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-hard">hard</span><span class="task-num">Задача 8 · ФИНАЛЬНАЯ</span></div>
+        <div class="task-title">Найдите флаг через 4 слоя декодирования. Hex-строка → Brainfuck → base64 → URL-encoded → флаг:</div>
+<pre class="scroll" style="font-size:8px;max-height:160px;line-height:1.25;word-break:break-all"><code>2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2e2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2</code></pre>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Задача 7 — подвох с ROT13.</strong> ROT13 применяется только к a-z, а hex использует a-f. Поэтому часть букв превратилась в n-s.</p>
+    <span class="nlabel">Алгоритм для задачи 7</span>
+    <p>ROT13 → получаем корректный hex → bytes.fromhex → UTF-16LE decode. Чтобы вернуть, надо снова ROT13 (потому что ROT13 обратим).</p>
+    <span class="nlabel">Задача 8 — самая сложная, 4 слоя</span>
+    <p>Hex → Brainfuck → base64 → URL-decode → флаг.</p>
+    <span class="nlabel">Подсказка для тех, кто застрял</span>
+    <p>Начни с hex decode, посмотри на результат — увидишь много + и - → это brainfuck. Запусти его → получишь base64. Декодируй → URL-decode → флаг.</p>
+    <span class="nlabel">Ожидаемые результаты</span>
+    <ul>
+      <li>Задача 7: ctf{utf16rot}</li>
+      <li>Задача 8: ctf{master_combo}</li>
+    </ul>
+    <span class="nlabel">Тайминг</span>
+    <p>~20 минут (задачу 8 оставить 15 минут).</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 40 — Решения мини-CTF 1-3 ====================== -->
+<section class="slide" data-slide="40">
+  <div class="corner-mark"><span class="dot"></span>SOLUTIONS</div>
+  <div class="slide-content">
+    <h2>Решения мини-CTF 1–3</h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="card card-tight" style="border-top:3px solid var(--green)">
+        <h3 style="font-size:15px;color:var(--green)">Решение 1</h3>
+        <p style="font-size:11px;color:var(--text-muted)">ROT13 → ctf{rot13}</p>
+<pre class="compact" style="font-size:10.5px"><code><span class="kw">import</span> codecs
+&gt;&gt;&gt; codecs.encode(
+...   <span class="str">'pgs{ebg13}'</span>, <span class="str">'rot_13'</span>)
+<span class="str">'ctf{rot13}'</span></code></pre>
+        <p style="font-size:11px;margin-top:6px">CyberChef: операция ROT13.</p>
+      </div>
+      <div class="card card-tight" style="border-top:3px solid var(--green)">
+        <h3 style="font-size:15px;color:var(--green)">Решение 2</h3>
+        <p style="font-size:11px;color:var(--text-muted)">URL-decode → ctf{url}</p>
+<pre class="compact" style="font-size:10.5px"><code><span class="kw">from</span> urllib.parse <span class="kw">import</span> unquote
+&gt;&gt;&gt; unquote(
+...   <span class="str">'ctf%7Burl%7D'</span>)
+<span class="str">'ctf{url}'</span></code></pre>
+        <p style="font-size:11px;margin-top:6px">%7B = '{', %7D = '}'.</p>
+      </div>
+      <div class="card card-tight" style="border-top:3px solid var(--green)">
+        <h3 style="font-size:15px;color:var(--green)">Решение 3</h3>
+        <p style="font-size:11px;color:var(--text-muted)">Brainfuck → ctf{bf}</p>
+        <p style="font-size:12px">Программа выводит 'ctf{bf}'. Вставьте код в <a href="https://copy.sh/brainfuck/" style="color:var(--cyan)">copy.sh/brainfuck</a>, нажмите Run.</p>
+<pre class="compact" style="font-size:10px"><code><span class="com"># Python (функция из слайда 34)</span>
+output = brainfuck(PROGRAM_STRING)
+<span class="fn">print</span>(output)
+<span class="com"># ctf{bf}</span></code></pre>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Все три — простые. ROT13 — codecs.encode. URL-decode — unquote. Brainfuck — самый лёгкий путь: онлайн-интерпретатор.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Все три — простые, должны были решить все.</strong></p>
+    <span class="nlabel">ROT13</span>
+    <p>codecs.encode. Симметричен — encode = decode.</p>
+    <span class="nlabel">URL-decode</span>
+    <p>unquote. %7B = '{', %7D = '}'.</p>
+    <span class="nlabel">Brainfuck</span>
+    <p>Самый лёгкий путь: онлайн-интерпретатор (copy.sh). Если кто-то написал свой интерпретатор — похвалить, но для CTF это не обязательно.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты на разбор.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 41 — Решения мини-CTF 4-6 ====================== -->
+<section class="slide" data-slide="41">
+  <div class="corner-mark"><span class="dot"></span>SOLUTIONS</div>
+  <div class="slide-content">
+    <h2>Решения мини-CTF 4–6</h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="card card-tight" style="border-top:3px solid var(--amber)">
+        <h3 style="font-size:14px;color:var(--amber)">Решение 4</h3>
+        <p style="font-size:11px;color:var(--text-muted)">ROT13(b64) → ctf{b64rot}</p>
+<pre class="compact" style="font-size:9.5px"><code><span class="kw">import</span> codecs, base64
+s = <span class="str">'L3Ezr2V2AUWiqU0='</span>
+step1 = codecs.encode(s, <span class="str">'rot_13'</span>)
+<span class="com"># 'Y3Rme2I2NHJvdH0='</span>
+flag = base64.b64decode(
+  step1).decode()
+<span class="fn">print</span>(flag)
+<span class="com"># ctf{b64rot}</span></code></pre>
+      </div>
+      <div class="card card-tight" style="border-top:3px solid var(--amber)">
+        <h3 style="font-size:14px;color:var(--amber)">Решение 5</h3>
+        <p style="font-size:11px;color:var(--text-muted)">URL(b64) → ctf{urlb64}</p>
+<pre class="compact" style="font-size:9.5px"><code><span class="kw">import</span> base64
+<span class="kw">from</span> urllib.parse <span class="kw">import</span> unquote
+s = <span class="str">'Y3Rme3VybGI2NH0%3D'</span>
+step1 = unquote(s)
+<span class="com"># 'Y3Rme3VybGI2NH0='</span>
+flag = base64.b64decode(
+  step1).decode()
+<span class="fn">print</span>(flag)
+<span class="com"># ctf{urlb64}</span></code></pre>
+      </div>
+      <div class="card card-tight" style="border-top:3px solid var(--amber)">
+        <h3 style="font-size:14px;color:var(--amber)">Решение 6</h3>
+        <p style="font-size:11px;color:var(--text-muted)">BF → hex → ctf{bfhex}</p>
+<pre class="compact" style="font-size:9.5px"><code><span class="com"># 1. Запустить BF в copy.sh</span>
+<span class="com"># -&gt; вывод: 6374667b62666865787d</span>
+
+<span class="com"># 2. Hex -&gt; текст</span>
+hex_str = <span class="str">'6374667b62666865787d'</span>
+flag = bytes.fromhex(
+  hex_str).decode()
+<span class="fn">print</span>(flag)
+<span class="com"># ctf{bfhex}</span></code></pre>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:8px">
+      <strong>Задача 5 — обратить внимание:</strong> сначала URL-decode (снимает %3D → =), потом base64-decode. Если сделать наоборот — будет ошибка.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти по каждому решению.</strong></p>
+    <span class="nlabel">Задача 5 — обратить внимание</span>
+    <p>Сначала URL-decode (снимает %3D → =), потом base64-decode. Если сделать наоборот — будет ошибка (потому что base64 не понимает %).</p>
+    <span class="nlabel">Задача 6 — идея两层编码 через Brainfuck как обёртку</span>
+    <p>BF выводит hex-строку, которую надо декодировать второй раз. Это классический CTF-паттерн.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 42 — Решения мини-CTF 7-8 ====================== -->
+<section class="slide" data-slide="42">
+  <div class="corner-mark"><span class="dot"></span>SOLUTIONS</div>
+  <div class="slide-content">
+    <h2>Решения мини-CTF 7–8</h2>
+    <div class="two-col" style="margin-top:6px">
+      <div class="card" style="border-top:3px solid var(--red)">
+        <h3 style="color:var(--red);font-size:16px">Решение 7 · ctf{utf16rot}</h3>
+        <p style="font-size:11px;color:var(--text-muted)">ROT13(hex(UTF-16LE))</p>
+<pre class="compact" style="font-size:10px"><code><span class="kw">import</span> codecs
+s = <span class="str">'6300740066007o00...'</span>
+<span class="com"># Шаг 1: ROT13 (обратим, возвращает hex)</span>
+hex_str = codecs.encode(s, <span class="str">'rot_13'</span>)
+<span class="fn">print</span>(hex_str)
+<span class="com"># 6300740066007b007500740066003100360072006f0074007d00</span>
+<span class="com"># Шаг 2: hex -&gt; bytes -&gt; UTF-16LE decode</span>
+flag = bytes.fromhex(hex_str).decode(<span class="str">'utf-16-le'</span>)
+<span class="fn">print</span>(flag)
+<span class="com"># ctf{utf16rot}</span></code></pre>
+        <p style="font-size:11px;margin-top:6px">ROT13 применяется только к a-z. Hex-буквы a-f превратились в n-s. Повторный ROT13 возвращает исходный hex.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--red)">
+        <h3 style="color:var(--red);font-size:16px">Решение 8 · ctf{master_combo}</h3>
+        <p style="font-size:11px;color:var(--text-muted)">hex(BF(b64(URL)))</p>
+<pre class="compact" style="font-size:10px"><code><span class="kw">import</span> base64
+<span class="kw">from</span> urllib.parse <span class="kw">import</span> unquote
+
+<span class="com"># Шаг 1: hex -&gt; Brainfuck</span>
+bf_code = bytes.fromhex(hex_str).decode()
+
+<span class="com"># Шаг 2: запускаем Brainfuck</span>
+b64_str = brainfuck(bf_code)
+<span class="com"># Y3RmJTdCbWFzdGVyX2NvbWJvJTdE</span>
+
+<span class="com"># Шаг 3: base64 decode</span>
+url_str = base64.b64decode(b64_str).decode()
+<span class="com"># ctf%7Bmaster_combo%7D</span>
+
+<span class="com"># Шаг 4: URL decode</span>
+flag = unquote(url_str)
+<span class="fn">print</span>(flag)
+<span class="com"># ctf{master_combo}</span></code></pre>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      В CyberChef это весь pipeline за один Bake: From Hex → Run Brainfuck (вручную) → From Base64 → URL Decode. Полноценный CTF-работflow.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти пошагово.</strong> Подчеркнуть: на каждом этапе мы смотрим на результат и определяем, что это.</p>
+    <span class="nlabel">Задача 7</span>
+    <p>ROT13 применяется только к a-z, поэтому hex-буквы a-f превратились в n-s. Повторный ROT13 возвращает исходный hex. Затем декодируем hex в байты и интерпретируем как UTF-16LE (признак — каждый второй байт нулевой).</p>
+    <span class="nlabel">Задача 8 — workflow</span>
+    <p>Сначала hex (только 0-9a-f) → декодируем → видим много '+' и '-' → понимаем это Brainfuck → запускаем → получаем base64 → декодируем → видим %XX → URL-decode → флаг.</p>
+    <span class="nlabel">Подчеркнуть</span>
+    <p>Это полноценный CTF-работflow. Именно так и работают реальные задачи.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 43 — Итоги модуля ====================== -->
+<section class="slide" data-slide="43">
+  <div class="corner-mark"><span class="dot"></span>FINALE</div>
+  <div class="slide-content">
+    <h2>Итоги модуля — <span class="accent-c">что вы умеете</span></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px">
+      <div class="card" style="border-left:3px solid var(--violet)">
+        <h4 style="color:var(--violet-soft)">5 кодировок освоено</h4>
+        <p style="font-size:13px">hex, binary, base64 (+ URL-safe, + без padding), ROT13, URL-encoding. + Brainfuck как обёртка.</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--cyan)">
+        <h4 style="color:var(--cyan)">Python-инструменты</h4>
+        <p style="font-size:13px"><code class="inline">ord/chr/bin/hex/int(x,base)</code>, <code class="inline">bytes.fromhex()</code>, <code class="inline">base64.b64encode/decode</code>, <code class="inline">codecs.encode(s, 'rot_13')</code>, <code class="inline">urllib.parse.quote/unquote</code></p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--green)">
+        <h4 style="color:var(--green)">Онлайн-тулы</h4>
+        <p style="font-size:13px"><strong>CyberChef</strong> (главный), <strong>dcode.fr</strong> (авто-детекция), <strong>copy.sh/brainfuck</strong> (интерпретатор)</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--amber)">
+        <h4 style="color:var(--amber)">Стратегия CTF</h4>
+        <ol style="font-size:13px;margin:0;padding-left:18px">
+          <li>Определи алфавит</li>
+          <li>Подбери кодировку</li>
+          <li>Декодируй</li>
+          <li>Повторяй</li>
+        </ol>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:12px">
+      <strong>Next module:</strong> Приоритет 2 — криптография (Caesar, XOR, частотный анализ). Там мы начнём работать с настоящими шифрами, где есть ключ.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Подвести итоги.</strong> Спросить класс: какая кодировка была самой сложной? Самой интересной? Кто решил финальную задачу 8?</p>
+    <span class="nlabel">Похвалить всех</span>
+    <p>Даже те, кто решил только лёгкие — уже молодцы. CTF — это навык, который развивается с практикой.</p>
+    <span class="nlabel">Что дальше</span>
+    <p>На следующем занятии начнём криптографию — там будет XOR (операция ^), который встречается вообще везде в CTF. Также шифр Цезаря и частотный анализ.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут на итоги.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 44 — Closing ====================== -->
+<section class="slide" data-slide="44">
+  <div class="corner-mark"><span class="dot"></span>THANKS</div>
+  <div class="binary-bg" aria-hidden="true" data-decor>ctf{master_combo} 0x7c3aed #22d3ee Y3RmJTdCbWFzdGVyX2NvbWJvJTdE %7B %7D +++++++++++++++++++++++++++++++++ 01000010 01001001 01010100 6374667b6578616d706c657d U+0444 d1 84 ord('A')=65 chr(0x41) codecs.encode base64.b64decode bytes.fromhex unquote urlsafe_b64decode rot_13 brainfuck cyberchef magic dcode.fr copy.sh picoctf ctflearn 0xff7b72 #a5d6ff #79c0ff</div>
+  <div class="slide-content" style="position:relative;z-index:2">
+    <h2>Полезные ссылки и <span class="accent-v">что дальше</span></h2>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <h4 style="color:var(--cyan)">Ссылки</h4>
+        <ul class="link-list">
+          <li><strong>CyberChef</strong> — <a href="https://gchq.github.io/CyberChef">gchq.github.io/CyberChef</a><br><span style="color:var(--text-muted);font-size:12px">главный инструмент</span></li>
+          <li><strong>dcode.fr</strong> — <a href="https://dcode.fr">dcode.fr</a><br><span style="color:var(--text-muted);font-size:12px">энциклопедия кодировок с авто-детекцией</span></li>
+          <li><strong>copy.sh</strong> — <a href="https://copy.sh/brainfuck/">copy.sh/brainfuck</a><br><span style="color:var(--text-muted);font-size:12px">онлайн-интерпретатор Brainfuck</span></li>
+          <li><strong>Python docs</strong> — <a href="https://docs.python.org/3/library/base64.html">base64</a>, <a href="https://docs.python.org/3/library/urllib.parse.html">urllib.parse</a>, <a href="https://docs.python.org/3/library/codecs.html">codecs</a></li>
+          <li><strong>picoCTF</strong> — <a href="https://picoctf.org">picoctf.org</a><br><span style="color:var(--text-muted);font-size:12px">бесплатные CTF задачи для начинающих</span></li>
+          <li><strong>CTFlearn</strong> — <a href="https://ctflearn.com">ctflearn.com</a><br><span style="color:var(--text-muted);font-size:12px">ещё платформа для тренировки</span></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4 style="color:var(--violet-soft)">Что дальше</h4>
+        <div class="card" style="border-left:3px solid var(--violet)">
+          <h4 style="color:var(--violet-soft);margin-bottom:8px">Приоритет 2: Криптография</h4>
+          <ul style="font-size:13px">
+            <li>Шифр Цезаря и брутфорс всех сдвигов</li>
+            <li>XOR и однобайтовый брутфорс ключа</li>
+            <li>Частотный анализ для подстановочных шифров</li>
+          </ul>
+        </div>
+        <div class="callout callout-cyan" style="margin-top:10px">
+          Через 2-3 занятия — мини-CTF на 30-40 минут со всеми темами.
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:14px;padding:16px;border-top:1px solid var(--border)">
+      <p style="font-size:22px;font-weight:600;color:var(--cyan)">Спасибо за модуль! Вопросы?</p>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Раздать ученикам ссылку на презентацию</strong> (если есть). Рекомендовать picoCTF — там есть задачи уровня easy именно на кодировки.</p>
+    <span class="nlabel">Совет ученикам</span>
+    <p>Решать по 1-2 задачи picoCTF в неделю. Это закрепит навыки и подготовит к следующему модулю.</p>
+    <span class="nlabel">Если есть время</span>
+    <p>Разобрать 1-2 задачи picoCTF на следующем занятии (перед криптографией).</p>
+    <span class="nlabel">Прощание</span>
+    <p>Поблагодарить за внимание. Спросить, есть ли вопросы. Ответить на каждый — даже на "глупые".</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+</div>
+</div>
+
+<aside class="notes-panel" id="notesPanel">
+  <div class="notes-header">
+    <h3>Заметки преподавателя</h3>
+    <button class="notes-close" id="closeNotes">×</button>
+  </div>
+  <div class="notes-body" id="notesBody"></div>
+</aside>
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  const counter = document.getElementById('counter');
+  const progressFill = document.getElementById('progressFill');
+  const notesPanel = document.getElementById('notesPanel');
+  const notesBody = document.getElementById('notesBody');
+  const notesBtn = document.getElementById('notesBtn');
+  const closeNotes = document.getElementById('closeNotes');
+  const fsBtn = document.getElementById('fsBtn');
+
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+  function show(i){
+    if(i < 0) i = 0;
+    if(i >= total) i = total - 1;
+    slides[current].classList.remove('active');
+    current = i;
+    slides[current].classList.add('active');
+    counter.textContent = pad(current + 1) + ' / ' + pad(total);
+    progressFill.style.width = ((current + 1) / total * 100) + '%';
+    updateNotes();
+  }
+
+  function next(){ show(current + 1); }
+  function prev(){ show(current - 1); }
+  function first(){ show(0); }
+  function last(){ show(total - 1); }
+
+  function updateNotes(){
+    const notes = slides[current].querySelector('.speaker-notes');
+    if(notes){
+      notesBody.innerHTML = notes.innerHTML;
+    } else {
+      notesBody.innerHTML = '<p style="color:var(--text-muted)">Заметок для этого слайда нет.</p>';
+    }
+  }
+
+  function toggleNotes(){
+    notesPanel.classList.toggle('open');
+  }
+
+  function toggleFullscreen(){
+    if(!document.fullscreenElement){
+      document.documentElement.requestFullscreen().catch(()=>{});
+    } else {
+      document.exitFullscreen().catch(()=>{});
+    }
+  }
+
+  function updateScale(){
+    const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    document.documentElement.style.setProperty('--scale', scale);
+  }
+
+  // Syntax highlighting
+  function highlightCode(code){
+    // Escape HTML first
+    code = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Apply highlighting via tokenization
+    const pattern = /(#[^\n]*)|('[^'\n]*')|("[^"\n]*")|(\b\d+\b)|(\b(?:def|import|from|return|for|while|if|else|elif|in|not|and|or|print|class|True|False|None|lambda|with|as|try|except|finally|raise|yield|break|continue|pass|global|nonlocal|assert|del|is|self)\b)/g;
+    return code.replace(pattern, (match, com, str1, str2, num, kw) => {
+      if(com) return '<span class="com">' + com + '</span>';
+      if(str1) return '<span class="str">' + str1 + '</span>';
+      if(str2) return '<span class="str">' + str2 + '</span>';
+      if(num) return '<span class="num">' + num + '</span>';
+      if(kw) return '<span class="kw">' + kw + '</span>';
+      return match;
+    });
+  }
+
+  function applyHighlighting(){
+    document.querySelectorAll('pre code').forEach(el => {
+      // Skip if already has spans (manually highlighted)
+      if(el.innerHTML.indexOf('<span') !== -1) return;
+      const raw = el.textContent;
+      if(raw && raw.trim()){
+        el.innerHTML = highlightCode(raw);
+      }
+    });
+  }
+
+  // Event listeners
+  document.addEventListener('keydown', e => {
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    switch(e.key){
+      case 'ArrowRight':
+      case ' ':
+      case 'Enter':
+        e.preventDefault(); next(); break;
+      case 'ArrowLeft':
+        e.preventDefault(); prev(); break;
+      case 'ArrowDown':
+        e.preventDefault(); next(); break;
+      case 'ArrowUp':
+        e.preventDefault(); prev(); break;
+      case 'Home':
+        e.preventDefault(); first(); break;
+      case 'End':
+        e.preventDefault(); last(); break;
+      case 's':
+      case 'S':
+        e.preventDefault(); toggleNotes(); break;
+      case 'f':
+      case 'F':
+        e.preventDefault(); toggleFullscreen(); break;
+      case 'Escape':
+        if(notesPanel.classList.contains('open')){
+          notesPanel.classList.remove('open');
+        }
+        break;
+    }
+  });
+
+  notesBtn.addEventListener('click', toggleNotes);
+  closeNotes.addEventListener('click', toggleNotes);
+  fsBtn.addEventListener('click', toggleFullscreen);
+
+  window.addEventListener('resize', updateScale);
+  updateScale();
+
+  // Init
+  applyHighlighting();
+  show(0);
+})();
+</script>
+</body>
+</html>
