@@ -1,0 +1,2413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Форензика в CTF — Модуль Priority 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e1a; --bg-card:#11161f; --bg-code:#161b22; --border:#30363d; --border-soft:#21262d;
+  --text:#e6edf3; --text-muted:#8b949e; --text-dim:#6e7681;
+  --violet:#7c3aed; --violet-soft:#a78bfa; --cyan:#22d3ee; --cyan-soft:#67e8f9;
+  --green:#3fb950; --amber:#d29922; --red:#f85149;
+  --kw:#ff7b72; --str:#a5d6ff; --num:#79c0ff; --com:#8b949e; --fn:#d2a8ff;
+}
+html,body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+.deck-wrapper{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.deck{width:1280px;height:720px;position:relative;transform:scale(var(--scale,1));transform-origin:center center;flex-shrink:0;background:var(--bg)}
+.slide{position:absolute;inset:0;padding:54px 64px 48px;opacity:0;pointer-events:none;transition:opacity .35s ease;overflow:hidden;display:flex;flex-direction:column;background:var(--bg)}
+.slide.active{opacity:1;pointer-events:auto}
+.slide::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--violet),var(--cyan));opacity:.7}
+.corner-mark{position:absolute;top:18px;right:24px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:.1em;display:flex;align-items:center;gap:6px}
+.corner-mark .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+h1{font-size:46px;font-weight:800;line-height:1.05;letter-spacing:-.025em;margin-bottom:14px}
+h2{font-size:30px;font-weight:700;line-height:1.15;letter-spacing:-.01em;margin-bottom:16px}
+h3{font-size:20px;font-weight:600;line-height:1.3;margin-bottom:8px}
+h4{font-size:16px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+p{font-size:17px;line-height:1.55;color:var(--text);margin-bottom:10px}
+li{font-size:16px;line-height:1.5;margin-bottom:6px}
+ul,ol{padding-left:22px;margin-bottom:10px}
+.accent-v{color:var(--violet-soft)} .accent-c{color:var(--cyan)} .accent-v-strong{color:var(--violet)}
+.muted{color:var(--text-muted)} .dim{color:var(--text-dim)}
+.lead{font-size:18px;color:var(--text-muted);line-height:1.5}
+strong{color:var(--text);font-weight:600}
+code.inline{font-family:'JetBrains Mono',monospace;font-size:.88em;background:var(--bg-code);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--cyan-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.5;color:var(--text);margin-bottom:10px}
+pre code{font-family:inherit;font-size:inherit;background:none;border:none;padding:0;color:inherit}
+pre.compact{padding:10px 14px;font-size:12px;line-height:1.45}
+pre.scroll{max-height:300px;overflow:auto}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:10px}
+.card-tight{padding:12px 14px}
+.badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-right:8px;vertical-align:middle}
+.badge-easy{background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.4)}
+.badge-medium{background:rgba(210,153,34,.12);color:var(--amber);border:1px solid rgba(210,153,34,.4)}
+.badge-hard{background:rgba(248,81,73,.12);color:var(--red);border:1px solid rgba(248,81,73,.4)}
+.callout{background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(34,211,238,.05));border:1px solid rgba(124,58,237,.3);border-left:3px solid var(--violet);border-radius:6px;padding:12px 16px;margin:8px 0;font-size:15px;line-height:1.5}
+.callout-cyan{border-left-color:var(--cyan);background:linear-gradient(135deg,rgba(34,211,238,.08),rgba(124,58,237,.04));border-color:rgba(34,211,238,.3)}
+.callout-red{border-left-color:var(--red);background:linear-gradient(135deg,rgba(248,81,73,.08),rgba(124,58,237,.04));border-color:rgba(248,81,73,.3)}
+table{border-collapse:collapse;width:100%;font-size:14px;margin-bottom:10px}
+th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--bg-code);color:var(--cyan);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+td code{font-family:'JetBrains Mono',monospace;color:var(--cyan-soft);font-size:13px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;min-height:0}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;flex:1;min-height:0}
+.col{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:10px 0}
+.stat{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:left}
+.stat-num{font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--violet-soft);line-height:1;margin-bottom:6px}
+.stat-num.cyan{color:var(--cyan)}
+.stat-num.green{color:var(--green)}
+.stat-num.red{color:var(--red)}
+.stat-label{font-size:13px;color:var(--text-muted);line-height:1.4}
+.task-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.task-card .task-num{font-size:13px;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+.task-card .task-title{font-size:15px;font-weight:600;line-height:1.35}
+.task-card pre{margin:4px 0 0;font-size:11px;padding:8px 10px;max-height:160px;overflow:auto}
+.arrow{color:var(--cyan);font-family:'JetBrains Mono',monospace}
+.binary-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:.06;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.3;color:var(--cyan);white-space:pre-wrap;word-break:break-all;padding:20px}
+.section-divider{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;height:100%;padding:0 20px}
+.section-big{font-size:88px;font-weight:800;letter-spacing:-.03em;line-height:1;background:linear-gradient(135deg,var(--violet-soft),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:12px}
+.progress-track{position:fixed;top:0;left:0;width:100%;height:3px;background:var(--border);z-index:100}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));width:0%;transition:width .35s ease}
+.slide-counter{position:fixed;top:14px;right:20px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);z-index:100;background:rgba(10,14,26,.8);padding:4px 10px;border-radius:4px;border:1px solid var(--border)}
+.nav-btn{position:fixed;bottom:20px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;z-index:100;transition:all .15s}
+.nav-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.notes-btn{right:20px} .fs-btn{right:120px}
+.notes-panel{position:fixed;top:0;right:0;width:440px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border);transform:translateX(100%);transition:transform .3s ease;z-index:200;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.4)}
+.notes-panel.open{transform:translateX(0)}
+.notes-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--bg-code)}
+.notes-header h3{font-size:15px;color:var(--cyan);margin:0}
+.notes-close{background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;padding:0 4px;line-height:1}
+.notes-close:hover{color:var(--text)}
+.notes-body{padding:18px;overflow-y:auto;font-size:13.5px;line-height:1.65;color:var(--text);flex:1}
+.notes-body p{margin-bottom:10px;font-size:13.5px;line-height:1.65}
+.notes-body strong{color:var(--cyan)}
+.notes-body code{font-family:'JetBrains Mono',monospace;background:var(--bg-code);border:1px solid var(--border);padding:1px 5px;border-radius:3px;color:var(--cyan-soft);font-size:12.5px}
+.notes-body .nlabel{color:var(--violet-soft);font-weight:600;display:block;margin-top:12px;margin-bottom:4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.speaker-notes{display:none}
+.slide-content{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.step-list{counter-reset:step;list-style:none;padding-left:0}
+.step-list li{counter-increment:step;position:relative;padding-left:30px;margin-bottom:8px;font-size:14px;line-height:1.5}
+.step-list li::before{content:counter(step);position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:var(--violet);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
+.tip-box{background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:10px 14px;margin:8px 0;font-size:13px;line-height:1.5}
+.tip-box .tip-h{color:var(--cyan);font-weight:600;display:block;margin-bottom:4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.hex-grid{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.4;color:var(--text-dim);word-break:break-all}
+.link-list{list-style:none;padding:0}
+.link-list li{padding:10px 0;border-bottom:1px solid var(--border-soft);font-size:14px}
+.link-list li:last-child{border-bottom:none}
+.link-list a{color:var(--cyan);text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:13px}
+.link-list a:hover{text-decoration:underline}
+.flag-out{font-family:'JetBrains Mono',monospace;color:var(--green);font-size:14px;padding:6px 10px;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.3);border-radius:4px;display:inline-block;margin:4px 0}
+.kw{color:var(--kw)} .str{color:var(--str)} .num{color:var(--num)} .com{color:var(--com);font-style:italic} .fn{color:var(--fn)}
+.png-frame{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.5;color:var(--cyan);white-space:pre;background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin:6px 0}
+.chunk-row{display:grid;grid-template-columns:60px 1fr 1fr 1fr 1fr;gap:8px;padding:6px 8px;border-bottom:1px solid var(--border-soft);font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
+.chunk-row:last-child{border-bottom:none}
+.chunk-row.head{background:var(--bg-code);color:var(--cyan);text-transform:uppercase;font-size:11px;letter-spacing:.04em}
+@media print{
+  .progress-track,.slide-counter,.nav-btn,.notes-panel{display:none!important}
+  html,body{overflow:visible;height:auto;background:#fff}
+  .deck-wrapper{display:block;height:auto;width:100%}
+  .deck{transform:none;width:100%;height:auto;background:#fff}
+  .slide{position:relative;opacity:1;pointer-events:auto;page-break-after:always;min-height:1000px;background:#0a0e1a;color:var(--text);padding:40px 50px}
+  .slide.active{opacity:1}
+  .speaker-notes{display:block!important;margin-top:20px;padding:16px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:12px;line-height:1.5}
+  .speaker-notes::before{content:'Заметки преподавателя:';display:block;color:#22d3ee;font-weight:600;margin-bottom:8px;font-size:13px}
+  pre{overflow:visible;white-space:pre-wrap;word-break:break-word}
+}
+</style>
+</head>
+<body>
+<div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+<div class="slide-counter" id="counter">01 / 43</div>
+<button class="nav-btn fs-btn" id="fsBtn" title="Полный экран (F)">⛶ Fullscreen</button>
+<button class="nav-btn notes-btn" id="notesBtn" title="Заметки (S)">📝 Notes</button>
+
+<div class="deck-wrapper">
+<div class="deck" id="deck">
+
+<!-- ====================== SLIDE 1 — Cover ====================== -->
+<section class="slide active" data-slide="1">
+  <div class="binary-bg" aria-hidden="true" data-decor>89 50 4E 47 0D 0A 1A 0A FF D8 FF PK\x03\x04 %PDF 7F 45 4C 46 4D 5A Rar! 37 7A BC AF b'\x89PNG\r\n\x1a\n' 00000000 89 50 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52 .PNG........IHDR IEND ae 42 60 82 PK\x05\x06 struct.unpack('>I', ...) zipfile.ZipFile io.BytesIO detect_type(data) extract_strings(data, min_len=4) hexdump(data, length=32) data.startswith(b'\x89PNG') data[:8].hex() open('rb') read(64) re.search(rb'ctf\{[^}]+\}') ctf{magic_bytes} ctf{png_text_chunk} ctf{after_iend_chunk} ctf{zip_archive_comment} ctf{appended_zip_after_png} ctf{nested_zip_matrioshka} ctf{brute_force_zip} 0a0e1a 7c3aed 22d3ee</div>
+  <div class="slide-content" style="justify-content:center;align-items:flex-start;position:relative;z-index:2">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--cyan);margin-bottom:18px;letter-spacing:.1em">CTF CLUB · ПРИОРИТЕТ 3</div>
+    <h1 style="font-size:72px;font-weight:800;letter-spacing:-.03em;line-height:1.02;margin-bottom:18px">Форензика <span style="background:linear-gradient(135deg,var(--violet-soft),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">в CTF</span></h1>
+    <p style="font-size:21px;color:var(--text-muted);max-width:780px;margin-bottom:18px;line-height:1.4">Модуль Priority 3 · 2 занятия × 2 часа · Кружок CTF, 8–10 класс</p>
+    <div class="callout callout-cyan" style="font-size:14px;padding:10px 16px;max-width:780px;margin-bottom:18px">
+      <strong>ТОЛЬКО PYTHON + БЛОКНОТ</strong> · без <code class="inline">nc</code> / <code class="inline">wireshark</code> / <code class="inline">binwalk</code> / <code class="inline">strings</code> / <code class="inline">file</code> / <code class="inline">xxd</code> / <code class="inline">exiftool</code>
+    </div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:14px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">
+      <span><span style="color:var(--violet-soft)">←</span> После модуля: кодировки</span>
+      <span><span style="color:var(--cyan)">→</span> Перед модулем: стеганография или реверс Python</span>
+    </div>
+  </div>
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <aside class="speaker-notes">
+    <p><strong>Приветствие.</strong> Поздороваться, спросить кто помнит <code>ord()</code>/<code>chr()</code> и <code>base64</code> из прошлых занятий — это пригодится.</p>
+    <span class="nlabel">Главное ограничение</span>
+    <p>Сразу обозначить: на школьных компьютерах нельзя ничего ставить — только Python IDLE и блокнот. Поэтому всё будем делать сами: hex dump, strings, определение типа файла. Это не минус, а плюс — лучше понимаете как работают данные.</p>
+    <span class="nlabel">Что такое forensics в CTF</span>
+    <p>Это ~20% всех задач CTF, и большая часть из них доступна на stdlib Python. Forensics — это анализ файлов: картинки, архивы, "испорченные" файлы, polyglot.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Кто открывал картинку в блокноте и видел мусор? Кто слышал про "magic bytes"? Кто знает, что делает команда <code>file</code> в Linux?</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты. Цель — задать тон и ограничения.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 2 — Roadmap ====================== -->
+<section class="slide" data-slide="2">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Дорожная карта модуля</h2>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="card" style="border-left:3px solid var(--violet)">
+          <h4 style="color:var(--violet-soft)">Занятие 1 · ~2 часа</h4>
+          <ul>
+            <li>Файл — это просто байты</li>
+            <li>Чтение файла в Python: <code class="inline">open(rb)</code></li>
+            <li>Hex dump своими руками</li>
+            <li>Magic bytes / file signatures</li>
+            <li>Strings — извлечение ASCII</li>
+            <li>8 практических задач</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card" style="border-left:3px solid var(--cyan)">
+          <h4 style="color:var(--cyan)">Занятие 2 · ~2 часа</h4>
+          <ul>
+            <li>Recap + PNG формат</li>
+            <li>Парсинг PNG chunks в Python</li>
+            <li>Text chunks (<code class="inline">tEXt</code>, <code class="inline">iTXt</code>)</li>
+            <li>ZIP формат и <code class="inline">zipfile</code></li>
+            <li>Дописанные данные / polyglot</li>
+            <li>Мини-CTF: 8 задач на структуру файлов</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:12px">
+      <strong>Связующее звено:</strong> всё это — про то, как данные устроены внутри файла. Расширение не определяет содержимое; magic bytes не врут.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Подчеркнуть структуру модуля.</strong> Занятие 1 — основы: байты и чтение. Занятие 2 — конкретные форматы: PNG и ZIP. На обоих занятиях всё делаем на Python stdlib.</p>
+    <span class="nlabel">Связь с прошлыми модулями</span>
+    <p>Прошлый модуль был про кодировки (hex, base64, ROT13, URL, Brainfuck) — то есть как записать текст разными способами. Этот модуль — как устроены бинарные файлы.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Кто открывал картинку в блокноте и видел мусор? Это и есть байты. Сегодня научимся их читать.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты. Обзор без углубления.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 3 — Section divider Занятие 1 ====================== -->
+<section class="slide" data-slide="3">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="section-divider slide-content">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--cyan);margin-bottom:10px;letter-spacing:.15em">// СЕССИЯ 1</div>
+    <div class="section-big">Занятие 1</div>
+    <p style="font-size:26px;color:var(--text);font-weight:500;margin-bottom:14px">Файл как набор байтов. Hex dump. Magic bytes. Strings.</p>
+    <p style="font-size:15px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">~2 часа · 20 слайдов теории и практики</p>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Кратко:</strong> сегодня научимся читать любые файлы как байты, делать hex dump, определять тип файла по сигнатуре и извлекать скрытый текст. В конце — 8 задач разной сложности.</p>
+    <span class="nlabel">План</span>
+    <p>Файл = байты → <code>open(rb)</code> → hexdump → magic bytes → таблица сигнатур → <code>detect_type()</code> → strings → онлайн-тулы → 8 задач (50 мин) → разбор решений → итоги.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>30 секунд на слайд-разделитель, сразу к содержанию.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 4 — Зачем forensics ====================== -->
+<section class="slide" data-slide="4">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Почему <span class="accent-v">forensics</span></h2>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-num">~20%</div>
+        <div class="stat-label">доля forensics-задач на типичном CTF</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num cyan">16</div>
+        <div class="stat-label">задач в нашем модуле (8 на занятие)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num green">0</div>
+        <div class="stat-label">внешних инструментов (только Python stdlib!)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">Python</div>
+        <div class="stat-label">наш главный и единственный инструмент</div>
+      </div>
+    </div>
+    <div class="callout callout-red" style="margin-top:14px">
+      <strong>Школьное ограничение:</strong> нельзя ставить <code class="inline">nc</code>, <code class="inline">Wireshark</code>, <code class="inline">binwalk</code>, <code class="inline">strings</code>, <code class="inline">file</code>, <code class="inline">xxd</code>, <code class="inline">exiftool</code>. Поэтому всё пишем сами на Python. Это не минус — это лучшее понимание как работают данные.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div class="card card-tight">
+        <h4 style="color:var(--text-muted)">Во "взрослом" CTF</h4>
+        <p style="font-size:14px">Используют <code class="inline">binwalk</code>, <code class="inline">strings</code>, <code class="inline">file</code>, <code class="inline">foremost</code>, <code class="inline">exiftool</code>. Мы не можем их поставить.</p>
+      </div>
+      <div class="card card-tight">
+        <h4 style="color:var(--cyan)">У нас в школе</h4>
+        <p style="font-size:14px">Напишем аналоги за 10–15 строк на Python: <code class="inline">hexdump</code>, <code class="inline">extract_strings</code>, <code class="inline">detect_type</code>. И понимать будем глубже.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Объяснить позиционирование.</strong> Во "взрослом" CTF используют binwalk, strings, file. Мы не можем их поставить на школьные компьютеры — но это значит, что напишем свои аналоги за 10–15 строк на Python.</p>
+    <span class="nlabel">Главная мысль</span>
+    <p>Понимать как работает <code>strings</code> важнее чем уметь его запустить. Когда напишешь свою версию — знаешь, что он делает внутри.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Кто знает, что делает команда <code>file</code> в Linux? <strong>Ответ:</strong> определяет тип файла по magic bytes (не по расширению!).</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты. Подчеркнуть цифру 0 внешних инструментов.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 5 — Файл это байты ====================== -->
+<section class="slide" data-slide="5">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Файл — это просто <span class="accent-c">байты</span></h2>
+    <p class="lead">Любой файл на диске — последовательность байтов (чисел 0–255). Блокнот показывает их как символы: для текста — это текст, для бинарных файлов (картинки, архивы) — мусор. Расширение — часть имени, оно НЕ определяет содержимое.</p>
+    <div class="card" style="margin-top:6px">
+      <h4 style="color:var(--cyan)">Один и тот же файл <code class="inline">cat.png</code> — три "взгляда"</h4>
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:8px 16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.5;margin-top:6px">
+        <div style="color:var(--text-muted)">Блокнот:</div>
+        <div style="color:var(--text);background:var(--bg-code);padding:4px 8px;border-radius:4px;border:1px solid var(--border)">‰PNG\r\n\x1a\n\x00\x00\x00\rIHDR... (мусор)</div>
+        <div style="color:var(--text-muted)">Hex viewer:</div>
+        <div style="color:var(--cyan);background:var(--bg-code);padding:4px 8px;border-radius:4px;border:1px solid var(--border)">89 50 4E 47 0D 0A 1A 0A 00 00 00 0D 49 48 44 52 (числа)</div>
+        <div style="color:var(--text-muted)">Python:</div>
+        <div style="color:var(--violet-soft);background:var(--bg-code);padding:4px 8px;border-radius:4px;border:1px solid var(--border)">b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR...' (bytes)</div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:10px">
+      <strong>Пранк.</strong> Переименовать <code class="inline">photo.png</code> в <code class="inline">photo.txt</code> → блокнот покажет мусор, но это всё ещё PNG. Windows откроет как картинку если вернуть расширение. <strong>Содержимое определяют первые байты</strong> (magic bytes — слайд 8).
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Главная идея занятия.</strong> Если ученики поймут что "файл = байты", всё остальное легко ложится.</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Открыть любой PNG в блокноте (или в Python через <code>open('cat.png','rb').read()</code>), показать что это байты. Видно 'PNG' в начале и много мусора после.</p>
+    <span class="nlabel">Расширение — что это</span>
+    <p>Расширение — это подсказка для операционки, какое приложение вызвать. Содержимое определяют первые байты (magic bytes — слайд 8).</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Что будет если переименовать .zip в .png? <strong>Ответ:</strong> Windows попробует открыть как картинку и выдаст ошибку — но содержимое-то ZIP. Если переименовать обратно в .zip, откроется как архив.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 6 — Чтение файла в Python ====================== -->
+<section class="slide" data-slide="6">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Чтение файла в Python</h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="scroll" style="max-height:380px"><code># 'r' — текстовый режим (str, ломается на бинарниках)
+with open('cat.png', 'r') as f:
+    data = f.read()
+# UnicodeDecodeError!
+
+# 'rb' — бинарный режим (bytes, всегда работает)
+with open('cat.png', 'rb') as f:
+    data = f.read()
+
+# data — это объект bytes
+print(type(data))   # &lt;class 'bytes'&gt;
+print(len(data))    # 1024
+print(data[0])      # 137 (это число, не символ!)
+print(data[:8])     # b'\x89PNG\r\n\x1a\n'
+
+# Прочитать только первые N байт
+with open('big.bin', 'rb') as f:
+    head = f.read(64)   # первые 64 байта</code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--red)">Главное правило</h4>
+          <p style="font-size:14px">Для forensics ВСЕГДА используйте <code class="inline">'rb'</code>. Текстовый режим <code class="inline">'r'</code> пытается декодировать байты как UTF-8 и ломается на бинарных файлах.</p>
+        </div>
+        <div class="callout">
+          <code class="inline">data[0]</code> возвращает <strong>число</strong> (0–255), а не символ. Это важно для анализа: можно сравнивать с числами, складывать, форматировать в hex.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--cyan)">bytes — что это</h4>
+          <p style="font-size:14px">Неизменяемая последовательность чисел 0–255. Похоже на строку, но каждый элемент — int, не str.</p>
+          <p style="font-size:13px;margin-top:6px"><code class="inline">b'PNG'</code> = <code class="inline">[80, 78, 71]</code></p>
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Windows путь</span>
+          Если у учеников Windows, пути с обратными слешами надо экранировать или использовать raw string: <code class="inline">r'C:\folder\file.bin'</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Самый важный слайд для понимания.</strong> Пройти вживую: открыть Python IDLE, прочитать любой файл с <code>'rb'</code>, показать <code>type(data)</code>, <code>len(data)</code>, <code>data[0]</code> — это int.</p>
+    <span class="nlabel">Типичная ошибка</span>
+    <p>Открыть PNG как <code>'r'</code> → <code>UnicodeDecodeError</code>. Обязательно показать эту ошибку вживую, чтобы запомнили.</p>
+    <span class="nlabel">data[0] — int, не str</span>
+    <p>В Python 3 при индексации bytes получаем int (число), а не str. Это частая путаница у школьников: <code>b'ABC'[0]</code> = 65, а не 'A'. Чтобы получить символ — <code>chr(b'ABC'[0])</code>.</p>
+    <span class="nlabel">Windows пути</span>
+    <p>Если у учеников Windows: путь <code>'C:\new\file.bin'</code> сработает некорректно (escape sequences). Использовать raw string <code>r'C:\new\file.bin'</code> или прямой слеш <code>'C:/new/file.bin'</code>.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут. Дать ученикам самим набрать команды в IDLE.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 7 — Hex dump своими руками ====================== -->
+<section class="slide" data-slide="7">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Hex dump своими руками</h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="scroll" style="max-height:380px"><code>def hexdump(data, length=32, width=16):
+    """Аналог xxd/hexdump на чистом Python."""
+    for i in range(0, min(length, len(data)), width):
+        chunk = data[i:i+width]
+        # hex часть: 89 50 4e 47 ...
+        hex_part = ' '.join(f'{b:02x}' for b in chunk)
+        # ascii часть: печатные символы или '.'
+        ascii_part = ''.join(
+            chr(b) if 32 &lt;= b &lt; 127 else '.'
+            for b in chunk
+        )
+        print(f'{i:08x}  {hex_part:&lt;{width*3}}  {ascii_part}')
+
+# Использование:
+with open('task1.bin', 'rb') as f:
+    data = f.read()
+hexdump(data, length=32)</code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Вывод на task1.bin</h4>
+<pre style="margin-top:6px;font-size:11.5px;background:#0d1117"><code>00000000  89 50 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52   .PNG........IHDR
+00000010  00 00 00 01 00 00 00 01 08 02 00 00 00 90 77 53  ..............wS</code></pre>
+        </div>
+        <div class="callout">
+          <code class="inline">f'{b:02x}'</code> — формат числа в hex (2 символа с лидирующим нулём). <code class="inline">' '.join</code> — объединить через пробел.
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">ASCII-часть</span>
+          Печатные символы (32–126) показываем как есть, непечатные заменяем на <code class="inline">'.'</code>. Это аналог утилит <code class="inline">xxd</code> и <code class="inline">hexdump</code> в Linux.
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Демо</span>
+          Запустить на task1.bin — увидим сигнатуру <code class="inline">ff d8 ff</code> (JPEG) или <code class="inline">89 50 4e 47</code> (PNG).
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти по коду построчно.</strong></p>
+    <span class="nlabel">f'{b:02x}'</span>
+    <p>Форматная строка: <code>b</code> — это int, <code>:02x</code> — минимум 2 символа, лидирующие нули, шестнадцатеричный формат. Например, 10 → '0a', 255 → 'ff', 5 → '05'.</p>
+    <span class="nlabel">' '.join(...)</span>
+    <p>Объединяет список строк через пробел. Из <code>['89','50','4e','47']</code> делает '89 50 4e 47'.</p>
+    <span class="nlabel">ascii_part</span>
+    <p>Генераторное выражение: <code>chr(b) if 32 &lt;= b &lt; 127 else '.'</code> — переводим в символ если печатный, иначе точка.</p>
+    <span class="nlabel">width*3</span>
+    <p>Почему умножаем на 3: каждый байт = 2 hex-символа + 1 пробел. То есть ширина поля — 16 байт × 3 = 48 символов.</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Запустить на task1.bin — увидим сигнатуру в первых байтах. Это аналог утилит xxd и hexdump.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут. Обязательно запустить вживую.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 8 — Magic bytes ====================== -->
+<section class="slide" data-slide="8">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Magic bytes / file signatures</h2>
+    <p class="lead">Первые несколько байтов файла определяют его реальный тип. Это называется "magic bytes" или "file signature". Расширение может быть любым — magic bytes не врут.</p>
+    <table style="margin-top:6px;font-size:12.5px">
+      <thead>
+        <tr><th>Формат</th><th>Первые байты (hex)</th><th>Длина</th><th>Как запомнить</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>PNG</strong></td><td><code>89 50 4E 47 0D 0A 1A 0A</code></td><td>8</td><td><code>\x89PNG\r\n\x1a\n</code></td></tr>
+        <tr><td><strong>JPEG</strong></td><td><code>FF D8 FF</code></td><td>3</td><td><code>\xff\xd8\xff</code></td></tr>
+        <tr><td>GIF</td><td><code>47 49 46 38 39 61</code></td><td>6</td><td><code>GIF89a</code></td></tr>
+        <tr><td>BMP</td><td><code>42 4D</code></td><td>2</td><td><code>BM</code></td></tr>
+        <tr><td><strong>ZIP</strong></td><td><code>50 4B 03 04</code></td><td>4</td><td><code>PK\x03\x04</code></td></tr>
+        <tr><td><strong>PDF</strong></td><td><code>25 50 44 46</code></td><td>4</td><td><code>%PDF</code></td></tr>
+        <tr><td>RAR</td><td><code>52 61 72 21</code></td><td>4</td><td><code>Rar!</code></td></tr>
+        <tr><td>7z</td><td><code>37 7A BC AF 27 1C</code></td><td>6</td><td><code>7z\xbc\xaf'\x1c</code></td></tr>
+        <tr><td>ELF</td><td><code>7F 45 4C 46</code></td><td>4</td><td><code>\x7fELF</code> (Linux EXE)</td></tr>
+        <tr><td>MZ</td><td><code>4D 5A</code></td><td>2</td><td><code>MZ</code> (Windows EXE)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-cyan" style="margin-top:6px">
+      <strong>Топ-3 для CTF:</strong> PNG, ZIP, JPEG. Запомнить сигнатуры — половина успеха в forensics. Совет: всегда первое что делать с неизвестным файлом — <code class="inline">data[:8].hex()</code> и сравнить с таблицей.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Топ-3 для CTF:</strong> PNG, ZIP, JPEG. Запомнить сигнатуры — половина успеха в forensics.</p>
+    <span class="nlabel">Как запоминать</span>
+    <p>Сигнатуры часто человеко-читаемы: <code>%PDF</code>, <code>PK</code> (Phil Katz — создатель ZIP), <code>GIF89a</code>, <code>BM</code> (bitmap), <code>Rar!</code>, <code>\x7fELF</code> (Executable Linkable Format), <code>MZ</code> (Mark Zbikowski — разработчик DOS).</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Какие первые байты у PDF? <strong>Ответ:</strong> %PDF = <code>25 50 44 46</code>.</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Открыть <code>cat.png</code> в Python, посмотреть <code>data[:8]</code> — увидим <code>b'\x89PNG\r\n\x1a\n'</code>. Это и есть сигнатура PNG.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 9 — Дополнительная таблица сигнатур ====================== -->
+<section class="slide" data-slide="9">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Сигнатуры — быстро запомнить</h2>
+    <div class="two-col">
+      <div class="col">
+        <div class="card card-tight" style="border-left:3px solid var(--violet)">
+          <h4 style="color:var(--violet-soft)">Изображения</h4>
+          <p style="font-size:13px">PNG <code class="inline">89 50 4E 47</code> · JPEG <code class="inline">FF D8 FF</code> · GIF <code class="inline">47 49 46 38</code> · BMP <code class="inline">42 4D</code> · WebP <code class="inline">RIFF....WEBP</code></p>
+        </div>
+        <div class="card card-tight" style="border-left:3px solid var(--cyan)">
+          <h4 style="color:var(--cyan)">Архивы</h4>
+          <p style="font-size:13px">ZIP <code class="inline">50 4B 03 04</code> · RAR <code class="inline">52 61 72 21</code> · 7z <code class="inline">37 7A BC AF</code> · GZIP <code class="inline">1f 8b</code> · TAR (без sig, в конце)</p>
+        </div>
+        <div class="card card-tight" style="border-left:3px solid var(--green)">
+          <h4 style="color:var(--green)">Документы</h4>
+          <p style="font-size:13px">PDF <code class="inline">%PDF</code> · RTF <code class="inline">{\rtf</code> · ODF <code class="inline">PK</code> (это ZIP!) · DOCX/XLSX тоже ZIP</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card card-tight" style="border-left:3px solid var(--amber)">
+          <h4 style="color:var(--amber)">Исполняемые</h4>
+          <p style="font-size:13px">ELF <code class="inline">7F 45 4C 46</code> (Linux EXE) · MZ <code class="inline">4D 5A</code> (Windows EXE) · JAVA class <code class="inline">CA FE BA BE</code></p>
+        </div>
+        <div class="card card-tight" style="border-left:3px solid var(--red)">
+          <h4 style="color:var(--red)">Audio / Video</h4>
+          <p style="font-size:13px">MP3 <code class="inline">ID3</code> · WAV <code class="inline">RIFF....WAVE</code> · MP4 <code class="inline">ftyp</code> (4 байта со смещением 4)</p>
+        </div>
+        <div class="callout callout-cyan" style="margin-top:8px;font-size:14px">
+          <strong>PDF и ODF — это ZIP-архивы внутри!</strong> Можно открыть через <code class="inline">zipfile</code>. Частый трюк в CTF — файл выглядит как PDF, но внутри ZIP с XML.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Подчеркнуть: "PDF это ZIP внутри".</strong> Это важно для CTF. Совет: если стандартный парсер не справляется, попробуй открыть как ZIP.</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Попробовать <code>zipfile.ZipFile(io.BytesIO(open('some.docx','rb').read()))</code> — для DOCX, XLSX, ODF работает. Это ZIP-архив с XML внутри.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Что у ZIP? <strong>Ответ:</strong> <code>PK\x03\x04</code>. PK = Phil Katz, создатель формата ZIP. Что у JAVA class? <strong>Ответ:</strong> <code>CA FE BA BE</code> — "cafe babe", известная сигнатура.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты. Не нужно заучивать все сигнатуры — топ-3 (PNG, ZIP, JPEG) и общие категории.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 10 — Определение типа в Python ====================== -->
+<section class="slide" data-slide="10">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Определение типа файла в Python</h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="scroll" style="max-height:380px"><code>def detect_type(data):
+    """Определяем тип файла по magic bytes."""
+    signatures = [
+        (b'\x89PNG\r\n\x1a\n', 'PNG'),
+        (b'\xff\xd8\xff',      'JPEG'),
+        (b'GIF87a',            'GIF (87a)'),
+        (b'GIF89a',            'GIF (89a)'),
+        (b'BM',                'BMP'),
+        (b'PK\x03\x04',        'ZIP'),
+        (b'%PDF',              'PDF'),
+        (b'Rar!\x1a\x07',      'RAR'),
+        (b'7z\xbc\xaf\x27\x1c', '7z'),
+        (b'\x7fELF',           'ELF (Linux EXE)'),
+        (b'MZ',                'EXE (Windows)'),
+    ]
+    for sig, name in signatures:
+        if data.startswith(sig):
+            return name
+    return 'Unknown'
+
+# Использование:
+with open('task1.bin', 'rb') as f:
+    data = f.read()
+print(detect_type(data))   # 'JPEG'</code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Почему список, не if/elif</h4>
+          <p style="font-size:14px">Цепочка <code class="inline">if/elif</code> была бы длинной и копипастной. Список кортежей + цикл — короче и расширяется добавлением одной строки.</p>
+        </div>
+        <div class="callout">
+          <code class="inline">data.startswith(sig)</code> проверяет первые байты. Если ничего не совпало — <code class="inline">Unknown</code>.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">15 строк заменяют 'file'</h4>
+          <p style="font-size:14px">Системная <code class="inline">file</code> — это тысячи строк и магия libmagic. Для CTF нашего уровня хватает этого.</p>
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Типичная ошибка</span>
+          Перепутать порядок в кортеже (сначала байты, потом имя). Python выдаст AttributeError или TypeError. Запомнить: <code class="inline">(bytes, str)</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Показать вживую.</strong> <code>detect_type</code> на task1.bin → 'JPEG', на task3.bin → 'PDF', на png_task1.png → 'PNG'.</p>
+    <span class="nlabel">Подчеркнуть</span>
+    <p>Это 15 строк кода, а системная <code>file</code> — это тысячи строк и магия libmagic. Для CTF нашего уровня хватает.</p>
+    <span class="nlabel">Типичная ошибка</span>
+    <p>Перепутать порядок в кортеже — сначала байты, потом имя. Python либо упадёт с AttributeError при <code>startswith</code> на строке, либо TypeError.</p>
+    <span class="nlabel">Расширение</span>
+    <p>Можно добавить сигнатуры для всех форматов из слайда 9 — словарь будет расти. Но для начала достаточно топ-3 (PNG, ZIP, JPEG).</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут. Дать ученикам самим скопировать функцию в IDLE и протестировать.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 11 — Strings ====================== -->
+<section class="slide" data-slide="11">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Strings — извлечение <span class="accent-c">ASCII</span></h2>
+    <p class="lead">В любом бинарном файле между "мусорными" байтами часто прячутся печатные ASCII-строки — имена функций, пути, сообщения, иногда флаги. Извлечение этих строк — первый шаг в анализе.</p>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="card" style="border-left:3px solid var(--violet)">
+          <h4 style="color:var(--violet-soft)">Идея</h4>
+          <p style="font-size:14px">Проходим по всем байтам, подряд идущие печатные ASCII (32–126) собираем в строку. На непечатном байте обрываем.</p>
+          <p style="font-size:13px;margin-top:6px">Минимальная длина — обычно <strong>4 символа</strong> (чтобы отсеять случайные совпадения).</p>
+        </div>
+        <div class="callout">
+          <strong>Печатный ASCII</strong> — байты 32–126 (от пробела до тильды <code class="inline">~</code>). 0–31 — управляющие (Enter, Tab), 127 — DEL.
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Визуально</h4>
+<pre style="font-size:11px;background:#0d1117"><code>data = b'\x00\x00Hello, World!\x00\xffctf{hidden}\x00\x01'
+       ↑↑↑                 ↑↑↑                  ↑↑↑↑↑
+       непечатные          разделитель           разделитель
+
+strings = ['Hello, World!', 'ctf{hidden}']</code></pre>
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">В CTF</span>
+          Строки чаще всего в ASCII. Иногда в UTF-8 — для начала достаточно ASCII. Флаги обычно в формате <code class="inline">ctf{...}</code> — все символы печатные ASCII.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Объяснить идею "печатный ASCII".</strong> Это байты 32–126 (пробел до тильды <code>~</code>). Байты 0–31 — управляющие (Enter, Tab, BEL), 127 — DEL, 128+ — зависит от кодировки (UTF-8, Latin-1 и т.д.).</p>
+    <span class="nlabel">В CTF</span>
+    <p>Строки чаще всего в ASCII, но иногда в UTF-8. Для начала достаточно ASCII — флаги ctf{...} всегда ASCII.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Какой диапазон печатных ASCII? <strong>Ответ:</strong> 32–126. Подсказка: запомнить как "от пробела до тильды".</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Почему минимальная длина 4? <strong>Ответ:</strong> отсеять случайные 1–2-буквенные совпадения (например, байты 0x41 0x42 в бинарнике не означают что там 'AB' — это часть числа).</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 12 — Python strings implementation ====================== -->
+<section class="slide" data-slide="12">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Python-реализация strings</h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="scroll" style="max-height:380px"><code>def extract_strings(data, min_len=4):
+    """Аналог утилиты strings на чистом Python."""
+    result = []
+    current = []
+    for b in data:
+        if 32 &lt;= b &lt; 127:        # печатный ASCII
+            current.append(chr(b))
+        else:
+            # конец строки — сохраняем если длинная
+            if len(current) &gt;= min_len:
+                result.append(''.join(current))
+            current = []
+    # не забудем последнюю
+    if len(current) &gt;= min_len:
+        result.append(''.join(current))
+    return result
+
+# Использование:
+with open('task2.bin', 'rb') as f:
+    data = f.read()
+
+strings = extract_strings(data)
+for s in strings:
+    if 'ctf{' in s:
+        print('Flag found:', s)</code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Логика</h4>
+          <p style="font-size:14px"><code class="inline">current</code> — накапливаем печатные символы. На непечатном — добавляем в результат если длина ≥ <code class="inline">min_len</code>.</p>
+        </div>
+        <div class="callout callout-red">
+          <strong>Важно!</strong> Не забыть обработать последнюю строку <em>после цикла</em>. Если файл кончается печатными символами, без этого блока они потеряются.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">chr(b) — что это</h4>
+          <p style="font-size:14px">Перевод числа в символ: <code class="inline">chr(32)=' '</code>, <code class="inline">chr(65)='A'</code>, <code class="inline">chr(126)='~'</code>.</p>
+          <p style="font-size:13px;margin-top:6px">В Python 3 при итерации bytes получаем <strong>int</strong>, не str.</p>
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Regex-альтернатива</span>
+          <code class="inline">re.findall(rb'[\x20-\x7e]{4,}', data)</code> — короче, но менее педагогично. Для продакшна — ок, для обучения — лучше вручную.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти по коду построчно.</strong></p>
+    <span class="nlabel">current = []</span>
+    <p>Список для накопления печатных символов текущей строки. Почему list, не str: list.append быстрее str += для последовательного добавления.</p>
+    <span class="nlabel">chr(b)</span>
+    <p>Перевод числа в символ. <code>chr(32)=' '</code>, <code>chr(65)='A'</code>. В Python 3 при итерации bytes получаем int, не str.</p>
+    <span class="nlabel">Последний блок после цикла</span>
+    <p>Типичная ошибка — забыть обработать последнюю строку после цикла. Если файл кончается печатными символами, без этого блока они потеряются.</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Запустить на task2.bin, найти <code>ctf{find_me_in_strings}</code>.</p>
+    <span class="nlabel">Regex-альтернатива</span>
+    <p><code>re.findall(rb'[\x20-\x7e]{4,}', data)</code> — короче, но менее педагогично. Для продакшна — ок.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 13 — Онлайн-тулы ====================== -->
+<section class="slide" data-slide="13">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Онлайн-тулы (только браузер)</h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="task-card" style="border-left:3px solid var(--violet)">
+        <h3 style="color:var(--violet-soft)">hexed.it</h3>
+        <p style="font-size:13px"><a href="https://hexed.it" style="color:var(--cyan)">hexed.it</a></p>
+        <h4>Назначение</h4>
+        <p style="font-size:13px">онлайн hex editor</p>
+        <h4>Как использовать</h4>
+        <p style="font-size:13px">File → Open, видишь hex + ascii</p>
+        <h4>Фишка</h4>
+        <p style="font-size:13px">можно редактировать, искать, выделять</p>
+      </div>
+      <div class="task-card" style="border-left:3px solid var(--cyan)">
+        <h3 style="color:var(--cyan)">CyberChef</h3>
+        <p style="font-size:13px"><a href="https://gchq.github.io/CyberChef" style="color:var(--cyan)">gchq.github.io/CyberChef</a></p>
+        <h4>Полезные операции</h4>
+        <p style="font-size:13px">From Hex, To Hex, Regular Expression</p>
+        <h4>Strings через CyberChef</h4>
+        <p style="font-size:13px">вставить hex → From Hex → искать <code class="inline">ctf{</code></p>
+      </div>
+      <div class="task-card" style="border-left:3px solid var(--green)">
+        <h3 style="color:var(--green)">fileinfo.io</h3>
+        <p style="font-size:13px"><a href="https://fileinfo.io" style="color:var(--cyan)">fileinfo.io</a></p>
+        <h4>Назначение</h4>
+        <p style="font-size:13px">определение типа файла онлайн</p>
+        <h4>Как использовать</h4>
+        <p style="font-size:13px">загрузить файл → сайт скажет тип</p>
+      </div>
+    </div>
+    <div class="callout callout-red" style="margin-top:10px">
+      <strong>Внимание!</strong> Онлайн-тулы — для быстрой проверки. Но в CTF часто файлы чувствительные — лучше локально через Python. Загружая файл на сторонний сервис, вы теряете контроль над данными.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>В школе без прав админа онлайн-тулы — спасение.</strong> hexed.it особенно полезен для визуального анализа.</p>
+    <span class="nlabel">Подчеркнуть безопасность</span>
+    <p>Для CTF не стоит загружать файлы на сторонние сервисы — могут быть sensitive (содержать приватные данные, ключи и т.д.). Python-скрипт на локальном компе — безопаснее.</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Открыть task4.bin в hexed.it, показать hex view. Видно и hex, и ascii часть.</p>
+    <span class="nlabel">CyberChef для strings</span>
+    <p>Полезно для быстрой проверки: вставить hex файла → From Hex → видеть весь текст. Но это не заменяет полноценный extract_strings с фильтром по длине.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты. Это обзорный слайд.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 14 — Разбор примера ====================== -->
+<section class="slide" data-slide="14">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Разбираем задачу <span class="accent-c">вместе</span></h2>
+    <div class="callout" style="margin-bottom:8px">
+      <strong>Задача.</strong> Дан файл <code class="inline">unknown.bin</code>. Определите тип файла и найдите флаг.
+    </div>
+    <div class="two-col">
+      <div class="col">
+        <h4 style="color:var(--violet-soft)">Пошаговый разбор</h4>
+        <ol class="step-list">
+          <li>Открываем в бинарном режиме: <code class="inline">data = open('unknown.bin','rb').read()</code></li>
+          <li>Смотрим первые 8 байт: <code class="inline">print(data[:8].hex())</code> → <code class="inline">89504e470d0a1a0a</code></li>
+          <li>Сравниваем с таблицей сигнатур: <code class="inline">89 50 4E 47 0D 0A 1A 0A</code> — это PNG!</li>
+          <li>Проверяем через <code class="inline">detect_type</code>: → 'PNG'</li>
+          <li>Смотрим <code class="inline">extract_strings</code> → находим <code class="inline">'ctf{example_flag}'</code> в tEXt-чанке</li>
+        </ol>
+        <div class="callout callout-cyan">
+          <strong>Стратегия:</strong> <code class="inline">data[:8].hex()</code> → таблица → <code class="inline">detect_type</code> → <code class="inline">extract_strings</code> → regex <code class="inline">ctf{...}</code>. Стандартный pipeline.
+        </div>
+      </div>
+      <div class="col">
+        <h4 style="color:var(--cyan)">Полное решение</h4>
+<pre class="scroll" style="max-height:340px"><code>with open('unknown.bin', 'rb') as f:
+    data = f.read()
+
+print('First 8 bytes:', data[:8].hex())
+# 89504e470d0a1a0a
+print('Type:', detect_type(data))
+# PNG
+
+strings = extract_strings(data)
+for s in strings:
+    if 'ctf{' in s:
+        print('Flag:', s)
+        break
+# Flag: ctf{example_flag}</code></pre>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Показать вживую.</strong> Это эталонный pipeline для любой неизвестной forensics-задачи.</p>
+    <span class="nlabel">Стратегия</span>
+    <p><code>data[:8].hex()</code> → таблица сигнатур → <code>detect_type(data)</code> → <code>extract_strings(data)</code> → regex <code>r'ctf\{[^}]+\}'</code>. Это стандартный pipeline.</p>
+    <span class="nlabel">Если тип известен</span>
+    <p>Переходим к парсингу специфичного формата (занятие 2). Для PNG — парсим chunks; для ZIP — открываем через zipfile.</p>
+    <span class="nlabel">Почему не сразу extract_strings</span>
+    <p>Можно. Но обычно сначала проверяют тип — это подсказывает дальнейшие действия. Например, если PNG — флаг скорее всего в tEXt-чанке или после IEND.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 15 — Практика Занятие 1 обзор ====================== -->
+<section class="slide" data-slide="15">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Практика Занятие 1</h2>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num">8</div><div class="stat-label">задач</div></div>
+      <div class="stat"><div class="stat-num cyan">50</div><div class="stat-label">минут</div></div>
+      <div class="stat"><div class="stat-num green">ctf{...}</div><div class="stat-label">формат флага</div></div>
+      <div class="stat"><div class="stat-num">3+3+2</div><div class="stat-label">easy / medium / hard</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px">
+      <div class="card">
+        <h4 style="color:var(--green)">3 × Easy</h4>
+        <p style="font-size:13px">определить тип, найти strings, hex dump</p>
+        <h4 style="color:var(--amber);margin-top:8px">3 × Medium</h4>
+        <p style="font-size:13px">комбинация приёмов, every Nth byte, после IEND</p>
+        <h4 style="color:var(--red);margin-top:8px">2 × Hard</h4>
+        <p style="font-size:13px">multi-file (PNG+ZIP+text), паттерн с фильтром</p>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--cyan)">Tips</h4>
+        <ul style="font-size:13px">
+          <li>Файлы лежат в <code class="inline">forensics_files/</code> (запусти <code class="inline">forensics_setup.py</code> если их нет)</li>
+          <li>Все задачи решаются через: <code class="inline">open(rb)</code> → <code class="inline">detect_type</code> / <code class="inline">hexdump</code> / <code class="inline">extract_strings</code></li>
+          <li>regex <code class="inline">r'ctf\{[^}]+\}'</code> — стандартный поиск флага</li>
+          <li>Если застрял — спроси соседа или преподавателя</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Кто решит все 8 — bonus: придумать свою задачу и дать соседу.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Указать где файлы.</strong> Если кто-то не имеет файлов — запустить <code>forensics_setup.py</code> прямо на их компе (он работает на Windows/macOS/Linux с Python 3).</p>
+    <span class="nlabel">Тайминг</span>
+    <p>Дать 50 минут. Ходить по классу. Кто решил все 8 — bonus: придумать свою задачу.</p>
+    <span class="nlabel">Подсказки</span>
+    <p>Стандартный pipeline: <code>open(rb)</code> → <code>detect_type</code> / <code>hexdump</code> / <code>extract_strings</code>. Regex <code>r'ctf\{[^}]+\}'</code> для поиска флага.</p>
+    <span class="nlabel">Если ученик застрял</span>
+    <p>Спросить: "Что показал <code>detect_type</code>?", "Что в первых 8 байтах?". Не давать готовый ответ — наводить.</p>
+    <span class="nlabel">Тайминг слайда</span>
+    <p>~3 минуты на обзор, затем 50 минут практики.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 16 — Задачи 1-3 (Easy) ====================== -->
+<section class="slide" data-slide="16">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Задачи 1–3 <span class="badge badge-easy">Easy</span></h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 1</span></div>
+        <div class="task-title">Файл <code class="inline">task1.bin</code>. Определите тип файла по magic bytes.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          Используйте <code class="inline">detect_type(data)</code> или сравните <code class="inline">data[:4].hex()</code> с таблицей сигнатур.
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 2</span></div>
+        <div class="task-title">Файл <code class="inline">task2.bin</code>. Извлеките все ASCII-строки длиной ≥4 символов. Найдите флаг формата <code class="inline">ctf{...}</code>.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          Используйте <code class="inline">extract_strings(data)</code> и regex <code class="inline">r'ctf\{[^}]+\}'</code>.
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 3</span></div>
+        <div class="task-title">Файл <code class="inline">task3.bin</code>. Сделайте hex dump первых 32 байт. Определите формат.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          <code class="inline">hexdump(data, length=32)</code>. Первые 4 байта <code class="inline">%PDF</code> = <code class="inline">25 50 44 46</code>.
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Все три — прямое применение кода со слайдов. Должны решить за 10 минут.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Все три задачи — прямое применение кода со слайдов.</strong> Должны решить за 10 минут.</p>
+    <span class="nlabel">Типичные ошибки</span>
+    <ul>
+      <li>Открыть файл как <code>'r'</code> вместо <code>'rb'</code> → <code>UnicodeDecodeError</code></li>
+      <li>Забыть <code>import re</code> для regex</li>
+      <li>Использовать <code>r'ctf{.*}'</code> вместо <code>r'ctf\{[^}]+\}'</code> — фигурные скобки надо экранировать</li>
+    </ul>
+    <span class="nlabel">Подсказка</span>
+    <p>Посмотрите на первые 4 байта через <code>data[:4].hex()</code>. Сравните с таблицей на слайде 8.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~10 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 17 — Задачи 4-6 (Medium) ====================== -->
+<section class="slide" data-slide="17">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Задачи 4–6 <span class="badge badge-medium">Medium</span></h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 4</span></div>
+        <div class="task-title">Файл <code class="inline">task4.bin</code>. Внутри спрятан флаг. Найдите его.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          <code class="inline">extract_strings</code> + фильтр по <code class="inline">'ctf{'</code>. Флаг в tEXt-чанке PNG.
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 5</span></div>
+        <div class="task-title">Файл <code class="inline">task5.bin</code>. Это PNG. После конца PNG (IEND chunk) дописан текст. Найдите скрытое сообщение.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          IEND chunk = <code class="inline">IEND</code> + 4 байта CRC (<code class="inline">\xae\x42\x60\x82</code>). Всё что после — дописано.
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 6</span></div>
+        <div class="task-title">Файл <code class="inline">task6.bin</code>. Флаг спрятан по правилу: каждый 5-й байт начиная с байта №3.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          <code class="inline">for i in range(3, len(data), 5): chr(data[i])</code>. Соберите строку.
+        </div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:8px">
+      <strong>Task 5 — концепция "дописанные данные после EOF"</strong> — ключевая для занятия 2. Task 6 — задача на внимательность к позиции байтов.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Task 5 — концепция "дописанные данные после EOF".</strong> Это ключевая техника для занятия 2 (PNG + ZIP polyglot).</p>
+    <span class="nlabel">Типичная ошибка в task 5</span>
+    <p>Забыть что IEND chunk = 4 байта длина + 4 байта тип + 0 байт данные + 4 байта CRC = 12 байт, а не 4. Правильнее искать <code>data.find(b'IEND\xae\x42\x60\x82')</code> и взять +8 байт после (тип + CRC). Или +12 (включая length field).</p>
+    <span class="nlabel">Task 6 — внимательно с индексами</span>
+    <p><code>range(3, len(data), 5)</code> — каждый 5-й байт начиная с индекса 3. Это индексы 3, 8, 13, 18, ...</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~15 минут на все три.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 18 — Задачи 7-8 (Hard) ====================== -->
+<section class="slide" data-slide="18">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Задачи 7–8 <span class="badge badge-hard">Hard</span></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;flex:1;min-height:0">
+      <div class="task-card">
+        <div><span class="badge badge-hard">hard</span><span class="task-num">Задача 7</span></div>
+        <div class="task-title">Файл <code class="inline">task7.bin</code>. Это сцепление трёх файлов: PNG + ZIP + plain text. Разделите файл на 3 части по magic bytes и найдите флаг в каждой части.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          Найти конец PNG через <code class="inline">data.find(b'IEND\xae\x42\x60\x82') + 8</code>. Найти начало ZIP через <code class="inline">data.find(b'PK\x03\x04')</code>. Найти конец ZIP через <code class="inline">data.find(b'PK\x05\x06')</code> (EOCD signature).
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-hard">hard</span><span class="task-num">Задача 8</span></div>
+        <div class="task-title">Файл <code class="inline">task8.bin</code>. Флаг спрятан по правилу: каждый 13-й байт начиная с байта №5. Но в флаге только печатные ASCII (32–126) — непечатные байты на этих позициях пропускаются.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          <code class="inline">for i in range(5, len(data), 13): b = data[i]; if 32 &lt;= b &lt; 127: extracted.append(chr(b))</code>.
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-red" style="margin-top:8px">
+      <strong>Task 7 — самая важная задача занятия.</strong> Это основа polyglot и multi-file forensics. На занятии 2 будет polyglot.bin — похожая концепция.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Task 7 — самая важная задача занятия.</strong> Это основа polyglot и multi-file forensics. Подчеркнуть: находим boundaries через сигнатуры.</p>
+    <span class="nlabel">Логика task 7</span>
+    <ol style="font-size:13.5px;padding-left:18px">
+      <li>Найти IEND → конец PNG (один флаг внутри)</li>
+      <li>Найти PK\x03\x04 после IEND → начало ZIP</li>
+      <li>Найти PK\x05\x06 (EOCD) → конец ZIP (второй флаг внутри ZIP)</li>
+      <li>Всё что после EOCD + 22 + comment_len → plain text (третий флаг)</li>
+    </ol>
+    <span class="nlabel">Task 8 — фильтр</span>
+    <p>Точно как в <code>extract_strings</code>, но шаг 13 и фильтр печатных. Это вариация на тему.</p>
+    <span class="nlabel">Если ученики решили все 8</span>
+    <p>Похвалить — они готовы к занятию 2.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~20 минут на обе задачи.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 19 — Решения 1-3 ====================== -->
+<section class="slide" data-slide="19">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Решения 1–3</h2>
+    <div class="card card-tight" style="border-left:3px solid var(--green)">
+      <h4 style="color:var(--green)">Решение 1 — detect_type → JPEG</h4>
+<pre style="font-size:12px"><code>with open('forensics_files/task1.bin', 'rb') as f:
+    data = f.read()
+print(detect_type(data))
+# JPEG</code></pre>
+      <p style="font-size:13px;margin-top:4px">Первые 3 байта <code class="inline">ff d8 ff</code> — сигнатура JPEG.</p>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--green)">
+      <h4 style="color:var(--green)">Решение 2 — extract_strings → ctf{find_me_in_strings}</h4>
+<pre style="font-size:12px"><code>with open('forensics_files/task2.bin', 'rb') as f:
+    data = f.read()
+strings = extract_strings(data, min_len=4)
+import re
+for s in strings:
+    m = re.search(r'ctf\{[^}]+\}', s)
+    if m:
+        print(m.group(0))
+        break
+# ctf{find_me_in_strings}</code></pre>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--green)">
+      <h4 style="color:var(--green)">Решение 3 — hex dump → PDF</h4>
+<pre style="font-size:12px"><code>with open('forensics_files/task3.bin', 'rb') as f:
+    data = f.read()
+hexdump(data, length=32)
+# Первые 4 байта: 25 50 44 46 = '%PDF' → это PDF
+print(detect_type(data))   # 'PDF'</code></pre>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти по каждому решению.</strong></p>
+    <span class="nlabel">Regex <code>r'ctf\{[^}]+\}'</code></span>
+    <p>Стандартный паттерн для поиска флагов — запомнить. <code>\{</code> и <code>\}</code> — экранированные фигурные скобки. <code>[^}]+</code> — один или более символов, не являющихся <code>}</code>.</p>
+    <span class="nlabel">Типичная ошибка</span>
+    <p>Regex <code>r'ctf{.*}'</code> работает иначе — без экранирования <code>{</code> интерпретируется как квантификатор. Даст ошибку или неожиданный результат.</p>
+    <span class="nlabel">Про task 3</span>
+    <p>Буквы <code>%PDF</code> видны прямо в hex dump (как ASCII часть) — 25=%, 50=P, 44=D, 46=F. Человекочитаемая сигнатура.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 20 — Решения 4-6 ====================== -->
+<section class="slide" data-slide="20">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Решения 4–6</h2>
+    <div class="card card-tight" style="border-left:3px solid var(--amber)">
+      <h4 style="color:var(--amber)">Решение 4 — PNG tEXt chunk → ctf{filter_for_flag}</h4>
+<pre style="font-size:11.5px"><code>with open('forensics_files/task4.bin', 'rb') as f:
+    data = f.read()
+strings = extract_strings(data)
+import re
+for s in strings:
+    m = re.search(r'ctf\{[^}]+\}', s)
+    if m:
+        print(m.group(0))
+        break
+# ctf{filter_for_flag}</code></pre>
+      <p style="font-size:12.5px;margin-top:4px">Флаг лежал в tEXt-чанке PNG, но <code class="inline">extract_strings</code> его нашёл без парсинга PNG.</p>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--amber)">
+      <h4 style="color:var(--amber)">Решение 5 — PNG + appended text → ctf{after_iend_chunk}</h4>
+<pre style="font-size:11.5px"><code>with open('forensics_files/task5.bin', 'rb') as f:
+    data = f.read()
+iend_pos = data.find(b'IEND\xae\x42\x60\x82')
+appended = data[iend_pos + 8:]   # skip IEND chunk (type+CRC = 8 bytes)
+print(appended.decode('ascii', errors='ignore'))
+import re
+m = re.search(rb'ctf\{[^}]+\}', appended)
+print(m.group(0).decode())
+# ctf{after_iend_chunk}</code></pre>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--amber)">
+      <h4 style="color:var(--amber)">Решение 6 — every 5th byte → ctf{every_fifth_byte}</h4>
+<pre style="font-size:11.5px"><code>with open('forensics_files/task6.bin', 'rb') as f:
+    data = f.read()
+extracted = []
+for i in range(3, len(data), 5):
+    b = data[i]
+    if 32 &lt;= b &lt; 127:
+        extracted.append(chr(b))
+    else:
+        break   # непечатный = конец флага
+print(''.join(extracted))
+# ctf{every_fifth_byte}</code></pre>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Task 5 — важная техника.</strong> IEND chunk в PNG всегда один и тот же: 4 байта длины (00 00 00 00), 4 байта тип ('IEND'), 0 байт данные, 4 байта CRC (AE 42 60 82). Итого 12 байт.</p>
+    <span class="nlabel">Альтернатива</span>
+    <p>Можно искать строку 'IEND' + CRC и брать +8 после (type + CRC), либо +12 после (length + type + CRC). Оба работают.</p>
+    <span class="nlabel">Task 6 — break на непечатном</span>
+    <p>Это правильно только если после флага идёт мусор. В нашем файле именно так. Если бы флаг был в середине мусора, нужно было бы фильтровать (как в task 8).</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Пройти по коду. Подчеркнуть <code>appended.decode('ascii', errors='ignore')</code> — игнорируем непечатные байты при декоде.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~7 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 21 — Решения 7-8 ====================== -->
+<section class="slide" data-slide="21">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Решения 7–8</h2>
+    <div class="card card-tight" style="border-left:3px solid var(--red)">
+      <h4 style="color:var(--red)">Решение 7 — multi-file → 3 флага</h4>
+<pre class="scroll" style="max-height:280px;font-size:11px"><code>with open('forensics_files/task7.bin', 'rb') as f:
+    data = f.read()
+
+# Шаг 1: найти границы
+import struct
+iend_pos = data.find(b'IEND\xae\x42\x60\x82') + 8   # конец PNG
+zip_start = data.find(b'PK\x03\x04', iend_pos)        # начало ZIP
+eocd_pos = data.find(b'PK\x05\x06', zip_start)         # EOCD signature
+comment_len = struct.unpack('&lt;H', data[eocd_pos+20:eocd_pos+22])[0]
+zip_end = eocd_pos + 22 + comment_len                  # конец ZIP
+
+png_data = data[:iend_pos]
+zip_data = data[zip_start:zip_end]
+text_data = data[zip_end:]
+
+# Флаг в PNG (через strings)
+import re
+m = re.search(rb'ctf\{[^}]+\}', png_data)
+print(m.group(0).decode())   # ctf{in_png_text}
+
+# Флаг в ZIP
+import zipfile, io
+zf = zipfile.ZipFile(io.BytesIO(zip_data))
+print(zf.read('flag.txt').decode())   # ctf{in_zip_file}
+
+# Флаг в text
+m = re.search(rb'ctf\{[^}]+\}', text_data)
+print(m.group(0).decode())   # ctf{plain_text_tail}</code></pre>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--red)">
+      <h4 style="color:var(--red)">Решение 8 — every 13th byte → ctf{lucky_number_13}</h4>
+<pre style="font-size:11.5px"><code>with open('forensics_files/task8.bin', 'rb') as f:
+    data = f.read()
+extracted = []
+for i in range(5, len(data), 13):
+    b = data[i]
+    if 32 &lt;= b &lt; 127:
+        extracted.append(chr(b))
+flag = ''.join(extracted)
+import re
+m = re.search(r'ctf\{[^}]+\}', flag)
+print(m.group(0))
+# ctf{lucky_number_13}</code></pre>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Task 7 — самый сложный момент это правильно найти конец ZIP.</strong></p>
+    <span class="nlabel">EOCD — End Of Central Directory</span>
+    <p>Сигнатура <code>PK\x05\x06</code>, длина 22 байта + комментарий длиной в поле по смещению 20 (2 байта, little-endian). <code>struct.unpack('&lt;H', ...)</code> — именно little-endian.</p>
+    <span class="nlabel">Почему '&lt;H'</span>
+    <p><code>&lt;</code> = little-endian, <code>H</code> = unsigned short (2 байта). ZIP использует little-endian (как x86), в отличие от PNG который использует big-endian (<code>&gt;I</code>).</p>
+    <span class="nlabel">Task 8 — фильтр</span>
+    <p>Такой же как в <code>extract_strings</code>, но шаг 13. Подчеркнуть: если флаг заканчивается раньше чем конец данных, нерекомендуется break — фильтр собрать все печатные символы на нужных позициях.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~8 минут. Это самый сложный слайд разбора.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 22 — Итоги Занятия 1 ====================== -->
+<section class="slide" data-slide="22">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Итоги Занятия 1</h2>
+    <div class="card" style="border-left:3px solid var(--violet)">
+      <h4 style="color:var(--violet-soft)">Key takeaways</h4>
+      <ol style="font-size:14px;margin:0;padding-left:20px">
+        <li><strong>Файл = байты.</strong> Расширение не определяет содержимое — magic bytes не врут.</li>
+        <li><strong>Python: <code class="inline">open(rb)</code> + <code class="inline">data.hex()</code> + <code class="inline">data.startswith()</code></strong> — основа анализа файлов.</li>
+        <li><strong>Hex dump и strings — пишутся за 15 строк.</strong> Не нужны внешние утилиты.</li>
+        <li><strong>Стратегия:</strong> <code class="inline">data[:8].hex()</code> → таблица сигнатур → <code class="inline">detect_type</code> → <code class="inline">extract_strings</code> → regex <code class="inline">ctf{...}</code></li>
+      </ol>
+    </div>
+    <div class="two-col" style="margin-top:8px">
+      <div class="card">
+        <h4 style="color:var(--red)">Что было сложным</h4>
+        <p style="font-size:14px">Задача 7 (multi-file) — найти границы через сигнатуры. Запомнить: <code class="inline">IEND</code> для PNG, <code class="inline">PK\x05\x06</code> для ZIP (EOCD).</p>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--cyan)">Next time</h4>
+        <p style="font-size:14px">PNG и ZIP изнутри — структура, чанки, комментарии, polyglot и вложенные архивы.</p>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Кто решил все 8 — готов к занятию 2. Кто застрял на 5-6 — тоже молодец. Главное что понял pipeline.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Спросить класс:</strong> кто решил все 8? Кто застрял на task 7? Кто на task 6?</p>
+    <span class="nlabel">Подчеркнуть</span>
+    <p>Задача 7 — это "полигон" для занятия 2. На занятии 2 будет polyglot.bin — похожая концепция, но в более изящной форме.</p>
+    <span class="nlabel">Похвалить всех</span>
+    <p>Даже если решили только 4-5 — это уже результат. Главное — понять pipeline: <code>open(rb)</code> → <code>detect_type</code> → <code>extract_strings</code> → regex.</p>
+    <span class="nlabel">Что дальше</span>
+    <p>На следующем занятии начнём с рекапа (5 минут) и сразу парсинг PNG. Файлы уже лежат в <code>forensics_files/</code> — распечатать путь для учеников.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут на итоги.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 23 — Setup script ====================== -->
+<section class="slide" data-slide="23">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L1</div>
+  <div class="slide-content">
+    <h2>Setup — как подготовить файлы</h2>
+    <p class="lead">Перед занятием учитель запускает один раз скрипт, который создаёт все 16 файлов для задач.</p>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <h4 style="color:var(--cyan)">Запуск скрипта</h4>
+<pre style="font-size:13px"><code># В терминале (или через двойной клик на forensics_setup.py):
+python forensics_setup.py</code></pre>
+        <div class="callout">
+          Скрипт ~200 строк, чистый Python stdlib. Работает на Windows, macOS, Linux.
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">Что создаёт</h4>
+          <p style="font-size:13px">Папку <code class="inline">forensics_files/</code> с 16 файлами:</p>
+          <p style="font-size:13px;margin-top:6px"><strong>Занятие 1:</strong> <code class="inline">task1.bin</code> ... <code class="inline">task8.bin</code></p>
+          <p style="font-size:13px;margin-top:4px"><strong>Занятие 2:</strong> <code class="inline">png_task1.png</code>, <code class="inline">zip_task2.zip</code>, <code class="inline">png_task3.png</code>, <code class="inline">png_task4.png</code>, <code class="inline">zip_task5.zip</code>, <code class="inline">png_task6.png</code>, <code class="inline">polyglot.bin</code>, <code class="inline">nested.zip</code></p>
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Требования</span>
+          Python 3 (любая версия от 3.6+). Чистая стандартная библиотека, без внешних пакетов.
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Если у учеников нет файлов — пусть запустят <code class="inline">forensics_setup.py</code> прямо на их компе. На Windows: IDLE → File → Open → Run → Run Module.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Если у учеников нет файлов</strong> — пусть запустят <code>forensics_setup.py</code> прямо на их компе. Скрипт ~200 строк, чистый Python, работает везде.</p>
+    <span class="nlabel">На Windows через IDLE</span>
+    <p>File → Open → forensics_setup.py → Run → Run Module. Скрипт создаст папку <code>forensics_files/</code> рядом с собой.</p>
+    <span class="nlabel">Раздача файлов</span>
+    <p>Совет: раздавать ученикам папку <code>forensics_files/</code> целиком (на флешке или через школьную сетевую папку). Это быстрее чем заставлять каждого запускать скрипт.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~2 минуты. Только показать скрипт и как его запустить.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 24 — Section divider Занятие 2 ====================== -->
+<section class="slide" data-slide="24">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="section-divider slide-content">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--cyan);margin-bottom:10px;letter-spacing:.15em">// СЕССИЯ 2</div>
+    <div class="section-big">Занятие 2</div>
+    <p style="font-size:26px;color:var(--text);font-weight:500;margin-bottom:14px">Структура файлов: PNG chunks, ZIP, polyglot, вложенные архивы</p>
+    <p style="font-size:15px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">~2 часа · 19 слайдов · финал модуля</p>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Кратко:</strong> сегодня разберём как устроены PNG и ZIP внутри. В конце — мини-CTF на 8 задач. Финальная задача — вложенные ZIP-архивы (matryoshka).</p>
+    <span class="nlabel">Кто решит все</span>
+    <p>Готов к picoCTF forensics уровню easy/medium. Это уже не учебный, а реальный уровень.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>30 секунд на слайд-разделитель.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 25 — Recap ====================== -->
+<section class="slide" data-slide="25">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Что было в прошлый раз</h2>
+    <div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-top:6px">
+      <div class="stat" style="border-left:3px solid var(--violet)"><div class="stat-num" style="font-size:20px">Файл = байты</div><div class="stat-label">расширение не определяет тип</div></div>
+      <div class="stat" style="border-left:3px solid var(--cyan)"><div class="stat-num" style="font-size:20px">Magic bytes</div><div class="stat-label">PNG=<code class="inline">89 50 4E 47</code>, ZIP=<code class="inline">PK 03 04</code>, PDF=<code class="inline">%PDF</code></div></div>
+      <div class="stat" style="border-left:3px solid var(--green)"><div class="stat-num" style="font-size:20px">extract_strings</div><div class="stat-label">извлекает ASCII, min_len=4</div></div>
+      <div class="stat" style="border-left:3px solid var(--amber)"><div class="stat-num" style="font-size:20px">Python</div><div class="stat-label">заменяет xxd, strings, file</div></div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:14px">
+      <strong>Quick question.</strong> Найдите конец PNG-файла в байтовой строке. Что искать?
+    </div>
+    <div class="card" style="margin-top:10px;border-left:3px solid var(--violet-soft)">
+      <h4 style="color:var(--violet-soft)">Ответ</h4>
+      <p style="font-size:15px;font-family:'JetBrains Mono',monospace">IEND chunk = <code class="inline">b'IEND\xae\x42\x60\x82'</code> (4 байта тип 'IEND' + 4 байта CRC = AE 42 60 82). После него обычно ничего нет — но если есть, это дописанные данные.</p>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Быстрый recap за 3–5 минут.</strong> Активировать память.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Какая сигнатура у ZIP? <strong>Ответ:</strong> <code>PK\x03\x04</code>. У PDF? <strong>Ответ:</strong> <code>%PDF</code>.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Кто помнит формулу для поиска флага? <strong>Ответ:</strong> regex <code>r'ctf\{[^}]+\}'</code>.</p>
+    <span class="nlabel">После recap</span>
+    <p>Переходим к парсингу PNG — это самое интересное.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут на recap.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 26 — PNG формат ====================== -->
+<section class="slide" data-slide="26">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>PNG формат — структура</h2>
+    <p class="lead">PNG = 8-байтная сигнатура + последовательность chunks. Каждый chunk: 4 байта длина + 4 байта тип + данные + 4 байта CRC.</p>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="png-frame">PNG file:
+┌───────────────────────────────────────┐
+│ Signature (8 bytes: \x89PNG\r\n\x1a\n) │
+├───────────────────────────────────────┤
+│ Chunk: length(4) type(4) data(N) CRC(4)│  IHDR
+├───────────────────────────────────────┤
+│ Chunk: length(4) type(4) data(N) CRC(4)│  tEXt
+├───────────────────────────────────────┤
+│ Chunk: ...                             │  IDAT (×N)
+├───────────────────────────────────────┤
+│ Chunk: length=0 type=IEND              │  IEND
+└───────────────────────────────────────┘</div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Chunk types</h4>
+          <ul style="font-size:13px">
+            <li><strong>IHDR</strong> — заголовок (ширина, высота, битность)</li>
+            <li><strong>PLTE</strong> — палитра (для индексных)</li>
+            <li><strong>IDAT</strong> — сжатые пиксели (zlib), <strong>может быть несколько!</strong></li>
+            <li><strong>IEND</strong> — конец файла (длина 0)</li>
+            <li><strong>tEXt</strong> — текстовые метаданные (<code class="inline">ключ\x00значение</code>)</li>
+            <li><strong>iTXt</strong> — Unicode текст</li>
+            <li><strong>zTXt</strong> — сжатый текст</li>
+          </ul>
+        </div>
+        <div class="callout">
+          <strong>tEXt-чанк</strong> = ключевое поле для сокрытия данных в CTF. Формат: <code class="inline">keyword\x00value</code>. Пример: <code class="inline">Comment\x00ctf{hidden_here}</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Подчеркнуть:</strong> IDAT может быть несколько — часто в CTF задачах просят посчитать их количество (это task 3 сегодня).</p>
+    <span class="nlabel">tEXt-чанк</span>
+    <p>Ключевое поле для сокрытия данных. Формат: <code>keyword\x00value</code> — ключевое слово, нулевой байт как разделитель, значение. Пример: <code>Comment\x00ctf{hidden_here}</code>.</p>
+    <span class="nlabel">Standard keywords</span>
+    <p>Title, Author, Description, Copyright, Creation Time, Software, Disclaimer, <strong>Comment</strong> (любимый для CTF), Source, Warning.</p>
+    <span class="nlabel">CRC</span>
+    <p>CRC32 — контрольная сумма данных chunk. Для forensics обычно игнорируем, но можно проверять если хотим убедиться что данные не повреждены.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 27 — Парсинг PNG chunks ====================== -->
+<section class="slide" data-slide="27">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Парсинг PNG chunks в Python</h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="scroll" style="max-height:400px"><code>import struct
+
+def parse_png_chunks(data):
+    """Парсит PNG файл на чанки.
+    Возвращает список (type, data, offset)."""
+    chunks = []
+    if not data.startswith(b'\x89PNG\r\n\x1a\n'):
+        return chunks   # не PNG
+    pos = 8   # пропускаем сигнатуру
+    while pos &lt; len(data):
+        if pos + 8 &gt; len(data):
+            break
+        length = struct.unpack('&gt;I', data[pos:pos+4])[0]
+        ctype = data[pos+4:pos+8]      # 4 байта тип
+        cdata = data[pos+8:pos+8+length]
+        # CRC 4 байта после данных (не проверяем)
+        chunks.append((ctype, cdata, pos))
+        if ctype == b'IEND':
+            # всё что после IEND — дописано
+            appended = data[pos+12+length:]
+            if appended:
+                chunks.append((b'__APPENDED__', appended, pos+12+length))
+            break
+        pos += 12 + length   # length field + type + data + CRC
+    return chunks
+
+# Использование:
+with open('image.png', 'rb') as f:
+    data = f.read()
+for ctype, cdata, offset in parse_png_chunks(data):
+    print(ctype.decode(), len(cdata), 'bytes')</code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">struct.unpack('&gt;I', ...)</h4>
+          <p style="font-size:14px"><code class="inline">&gt;I</code> = big-endian unsigned int (4 байта). PNG использует big-endian.</p>
+          <p style="font-size:13px;margin-top:6px"><code class="inline">&gt;</code> = big-endian, <code class="inline">I</code> = unsigned int.</p>
+        </div>
+        <div class="callout">
+          Цикл пока не IEND — читаем chunk. Если после IEND что-то есть — это <strong>дописанные данные</strong> (важный случай для CTF).
+        </div>
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">__APPENDED__ трюк</h4>
+          <p style="font-size:14px">После IEND добавляем фиктивный chunk типа <code class="inline">__APPENDED__</code> с дописанными данными. Удобно для отслеживания.</p>
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Типичная ошибка</span>
+          Забыть <code class="inline">+length</code> при обновлении <code class="inline">pos</code>. Тогда цикл уйдёт в бесконечность.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти по коду построчно.</strong></p>
+    <span class="nlabel">struct.unpack('&gt;I', ...)</span>
+    <p>Чтение 4 байтов как числа. <code>'&gt;'</code> = big-endian (старший байт первым), <code>'I'</code> = unsigned int (4 байта). PNG использует big-endian, в отличие от ZIP (little-endian).</p>
+    <span class="nlabel">pos += 12 + length</span>
+    <p>12 = 4 (length field) + 4 (type) + 4 (CRC). + length — это сами данные chunk. Типичная ошибка: забыть +length, тогда цикл уйдёт в бесконечность.</p>
+    <span class="nlabel">__APPENDED__ трюк</span>
+    <p>После IEND добавляем фиктивный chunk типа '__APPENDED__' с дописанными данными. Это удобно — дальше в коде проверяем <code>if ctype == b'__APPENDED__'</code> и обрабатываем отдельно.</p>
+    <span class="nlabel">Offset</span>
+    <p>Сохраняем offset на случай если нужно знать позицию chunk в файле (например, для отладки или поиска конкретного места).</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~7 минут. Самый важный код дня.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 28 — Text chunks ====================== -->
+<section class="slide" data-slide="28">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Text chunks: <span class="accent-c">tEXt</span>, <span class="accent-v">iTXt</span></h2>
+    <p class="lead">PNG поддерживает текстовые метаданные в трёх типах чанков.</p>
+    <table style="font-size:13px;margin-top:6px">
+      <thead>
+        <tr><th>Тип</th><th>Формат</th><th>Описание</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>tEXt</strong></td><td><code>keyword\x00text</code></td><td>ASCII, keyword до 79 chars</td></tr>
+        <tr><td><strong>zTXt</strong></td><td><code>keyword\x00\x00compressed_text</code></td><td>Сжатый zlib</td></tr>
+        <tr><td><strong>iTXt</strong></td><td><code>keyword\x00\x01compressed_flag\x00lang\x00translated\x00text</code></td><td>Unicode</td></tr>
+      </tbody>
+    </table>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">Standard keywords</h4>
+          <p style="font-size:13px">Title, Author, Description, Copyright, Creation Time, Software, Disclaimer, <strong>Comment</strong> (любимый для CTF), Source, Warning.</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Чтение tEXt в Python</h4>
+<pre style="font-size:11.5px"><code>for ctype, cdata, _ in parse_png_chunks(data):
+    if ctype == b'tEXt':
+        parts = cdata.split(b'\x00', 1)
+        keyword = parts[0].decode('ascii', errors='replace')
+        value = parts[1].decode('ascii', errors='replace') if len(parts) &gt; 1 else ''
+        print(f'{keyword}: {value}')</code></pre>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      tEXt — самый частый в CTF. Если в value есть <code class="inline">ctf{...}</code> — нашли флаг!
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>tEXt — самый частый в CTF.</strong> Формат простой: keyword, потом <code>\x00</code> (нулевой байт как разделитель), потом value.</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Открыть png_task1.png через <code>parse_png_chunks</code>, показать что в Comment лежит 'ctf{png_text_chunk}'.</p>
+    <span class="nlabel">Подсказка для распознавания</span>
+    <p>В PNG-файле все чанки с типом, оканчивающимся на строчную букву (например tEXt — последняя 't' строчная), — auxiliary (вспомогательные). А с большой — critical (IHDR, IDAT, IEND, PLTE).</p>
+    <span class="nlabel">split(b'\x00', 1)</span>
+    <p>Разделяем по нулевому байту, maxsplit=1. Это важно — если в value есть нулевые байты, они останутся в value. Без maxsplit=1 — разделилось бы на много частей.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 29 — ZIP формат ====================== -->
+<section class="slide" data-slide="29">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>ZIP формат — структура</h2>
+    <p class="lead">ZIP = последовательность Local File Headers + Central Directory + End Of Central Directory (EOCD).</p>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="png-frame">ZIP file:
+┌─────────────────────────────────────────┐
+│ Local File Header 1 (PK\x03\x04)         │
+│ File data 1                              │
+├─────────────────────────────────────────┤
+│ Local File Header 2 (PK\x03\x04)         │
+│ File data 2                              │
+├─────────────────────────────────────────┤
+│ ...                                      │
+├─────────────────────────────────────────┤
+│ Central Directory (PK\x01\x02)           │
+│ - Запись для файла 1                     │
+│ - Запись для файла 2                     │
+├─────────────────────────────────────────┤
+│ EOCD (PK\x05\x06)                        │
+│ - Может быть archive comment (до 64KB)   │
+└─────────────────────────────────────────┘</div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">Python zipfile делает всё сам</h4>
+          <p style="font-size:14px"><code class="inline">ZipFile.read(name)</code> — находит local header, читает данные, декодирует. Ничего парсить вручную не надо.</p>
+        </div>
+        <div class="callout">
+          <strong>Зачем тогда знать структуру?</strong> Чтобы: 1) находить конец ZIP (EOCD) для multi-file задач; 2) понимать что комментарий — это поле в EOCD.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">Сигнатуры</h4>
+          <ul style="font-size:13px">
+            <li><code class="inline">PK\x03\x04</code> — Local File Header</li>
+            <li><code class="inline">PK\x01\x02</code> — Central Directory entry</li>
+            <li><code class="inline">PK\x05\x06</code> — EOCD (End Of Central Directory)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Объяснить структуру — но подчеркнуть что в Python нам не надо парсить это вручную.</strong> zipfile всё делает сам.</p>
+    <span class="nlabel">Зачем знать структуру</span>
+    <p>1) Находить конец ZIP (EOCD) для multi-file задач — это была task 7 на занятии 1. 2) Понимать что archive comment — это поле в EOCD (занятие 2, task 2 — флаг в комментарии).</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Какая сигнатура у ZIP? <strong>Ответ:</strong> <code>PK\x03\x04</code>. А у EOCD? <strong>Ответ:</strong> <code>PK\x05\x06</code>.</p>
+    <span class="nlabel">PK — кто это</span>
+    <p>Phil Katz — создатель формата ZIP. Его инициалы в сигнатуре.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 30 — zipfile ====================== -->
+<section class="slide" data-slide="30">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>ZIP в Python: <span class="accent-c">zipfile</span></h2>
+    <div class="two-col">
+      <div class="col">
+<pre class="scroll" style="max-height:400px"><code>import zipfile
+
+# Открыть из файла
+zf = zipfile.ZipFile('archive.zip')
+
+# Открыть из bytes (через io.BytesIO)
+import io
+with open('archive.zip', 'rb') as f:
+    data = f.read()
+zf = zipfile.ZipFile(io.BytesIO(data))
+
+# Список файлов
+print(zf.namelist())
+# ['readme.txt', 'data/config.json', 'flag.txt']
+
+# Информация о файлах
+for info in zf.infolist():
+    print(info.filename, info.file_size, info.compress_size)
+
+# Читать содержимое
+content = zf.read('flag.txt')
+print(content)   # bytes
+
+# Извлечь все
+zf.extractall('output_folder/')   # создаёт папку
+
+# Комментарий архива (в EOCD)
+print(zf.comment)   # bytes
+
+# Защищённый паролем
+content = zf.read('secret.txt', pwd=b'password123')</code></pre>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h4 style="color:var(--cyan)">API</h4>
+          <ul style="font-size:13px">
+            <li><code class="inline">namelist()</code> — список имён</li>
+            <li><code class="inline">read(name)</code> — содержимое (bytes)</li>
+            <li><code class="inline">extractall(path)</code> — извлечь всё в папку</li>
+            <li><code class="inline">comment</code> — архивный комментарий</li>
+            <li><code class="inline">read(name, pwd=bytes)</code> — для защищённых</li>
+          </ul>
+        </div>
+        <div class="callout callout-red">
+          <strong>Типичная ошибка:</strong> <code class="inline">read()</code> возвращает bytes, не str. Для строки: <code class="inline">zf.read('flag.txt').decode()</code>.
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Из bytes</span>
+          Если данные уже в памяти (как bytes), нельзя напрямую открыть через ZipFile. Обернуть в <code class="inline">io.BytesIO</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти по API.</strong> zipfile — мощная библиотека, всё что нужно для CTF.</p>
+    <span class="nlabel">Типичная ошибка</span>
+    <p>Забыть что <code>read()</code> возвращает bytes, не str. Для строки: <code>zf.read('flag.txt').decode()</code>.</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Открыть zip_task2.zip, показать <code>namelist()</code> и <code>zf.comment</code>. В комментарии лежит флаг.</p>
+    <span class="nlabel">Для защиты</span>
+    <p><code>read(name, pwd=b'1337')</code>. Пароль — bytes. Сегодня будет задача на брутфорс (task 5).</p>
+    <span class="nlabel">io.BytesIO</span>
+    <p>Если данные уже в памяти (как bytes), ZipFile не примет bytes напрямую. Обернуть в <code>io.BytesIO</code>: <code>zipfile.ZipFile(io.BytesIO(data))</code>. Это пригодится в polyglot-задачах.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~6 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 31 — ZIP комментарии ====================== -->
+<section class="slide" data-slide="31">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>ZIP комментарии</h2>
+    <p class="lead">У ZIP-архива может быть комментарий — текст до 64 КБ в поле EOCD. Это классическое место для сокрытия флага в CTF.</p>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <h4 style="color:var(--cyan)">Чтение комментариев</h4>
+<pre style="font-size:12.5px"><code>import zipfile
+
+zf = zipfile.ZipFile('archive.zip')
+# Архивный комментарий (bytes)
+print(zf.comment)
+# b'ctf{hidden_in_zip_comment}'
+
+# Комментарий каждого файла отдельно
+for info in zf.infolist():
+    if info.comment:
+        print(f'{info.filename}: {info.comment}')</code></pre>
+      </div>
+      <div class="col">
+        <div class="callout">
+          <strong>Приём CTF:</strong> архив выглядит пустым (0 файлов), но в комментарии — флаг. Или: <code class="inline">namelist()</code> показывает мусор, а комментарий содержит подсказку.
+        </div>
+        <div class="card">
+          <h4 style="color:var(--violet-soft)">Два типа комментариев</h4>
+          <ul style="font-size:13px">
+            <li><strong>Архивный</strong> — <code class="inline">zf.comment</code>, поле в EOCD</li>
+            <li><strong>Файловый</strong> — <code class="inline">info.comment</code> для каждого файла</li>
+          </ul>
+        </div>
+        <div class="tip-box">
+          <span class="tip-h">Decode</span>
+          <code class="inline">zf.comment</code> возвращает bytes. Для строки: <code class="inline">zf.comment.decode()</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>zf.comment — это bytes</strong>, обычно <code>decode()</code> чтобы получить строку.</p>
+    <span class="nlabel">infolist() и info.comment</span>
+    <p><code>infolist()</code> возвращает ZipInfo объекты — у каждого есть <code>.comment</code> (тоже bytes). Это файловый комментарий, отдельный от архивного.</p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Открыть zip_task2.zip, показать <code>zf.comment</code> → <code>b'ctf{zip_archive_comment}'</code>.</p>
+    <span class="nlabel">Вопрос классу</span>
+    <p>Что вернёт <code>namelist()</code> если архив пустой? <strong>Ответ:</strong> <code>[]</code> — пустой список. Но comment может быть непустым.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~4 минуты.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 32 — Дописанные данные ====================== -->
+<section class="slide" data-slide="32">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Дописанные данные после EOF</h2>
+    <p class="lead">Многие форматы игнорируют данные после своего "конечного" маркера. Это классический приём сокрытия данных в CTF.</p>
+    <table style="font-size:13px;margin-top:6px">
+      <thead><tr><th>Формат</th><th>Маркер конца</th><th>Что после — игнорируется?</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PNG</strong></td><td><code>IEND</code> chunk</td><td>Да, парсеры PNG останавливаются</td></tr>
+        <tr><td><strong>ZIP</strong></td><td><code>EOCD</code></td><td>Зависит (некоторые парсеры ищут последний EOCD)</td></tr>
+        <tr><td><strong>JPEG</strong></td><td><code>FFD9</code> (EOI)</td><td>Да, обычные просмотрщики</td></tr>
+        <tr><td><strong>PDF</strong></td><td><code>%%EOF</code></td><td>Да (если один)</td></tr>
+      </tbody>
+    </table>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <div class="card" style="border-left:3px solid var(--violet)">
+          <h4 style="color:var(--violet-soft)">Trick 1 — PNG + appended ZIP</h4>
+          <p style="font-size:13px">PNG-картинка, после IEND дописан ZIP. Картинка открывается, но в ZIP — флаг.</p>
+          <p style="font-size:12.5px;margin-top:6px">Поиск: <code class="inline">data.find(b'IEND\xae\x42\x60\x82') + 8</code> → bytes после.</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card" style="border-left:3px solid var(--cyan)">
+          <h4 style="color:var(--cyan)">Trick 2 — Polyglot</h4>
+          <p style="font-size:13px">Файл валиден как PNG <strong>И</strong> как ZIP одновременно. PNG ищет с начала, ZIP — находит PK-сигнатуру где-то в середине.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:6px">
+      Это ключевая концепция для CTF forensics. <strong>Polyglot</strong> — файл, валидный в нескольких форматах одновременно.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Это ключевая концепция для CTF forensics.</strong></p>
+    <span class="nlabel">Демонстрация</span>
+    <p>Открыть png_task6.png как картинку (открывается!), потом открыть в Python и найти что после IEND — ZIP-сигнатура <code>PK\x03\x04</code>. Извлечь ZIP, прочитать flag.txt. Это задача 6 сегодня.</p>
+    <span class="nlabel">Подчеркнуть</span>
+    <p>Polyglot — это файл, который валиден в нескольких форматах одновременно. В задаче 7 (polyglot.bin) будет именно это: файл валиден как PNG и как ZIP.</p>
+    <span class="nlabel">Почему стандартные библиотеки не видят</span>
+    <p>PIL/Pillow для PNG останавливается на IEND. zipfile ищет PK-сигнатуру. Поэтому если использовать только стандартные либы, можно пропустить данные после IEND. Наш ручной парсер — видит.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 33 — Разбор примера 2 ====================== -->
+<section class="slide" data-slide="33">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Разбираем задачу <span class="accent-c">вместе</span></h2>
+    <div class="callout" style="margin-bottom:8px">
+      <strong>Задача.</strong> Дан <code class="inline">image.png</code>. Это валидная картинка. Но внутри спрятан ZIP-архив с флагом. Найдите флаг.
+    </div>
+    <div class="two-col">
+      <div class="col">
+        <h4 style="color:var(--violet-soft)">Пошаговый разбор</h4>
+        <ol class="step-list">
+          <li>Открываем файл: <code class="inline">data = open('image.png', 'rb').read()</code></li>
+          <li>Парсим PNG chunks: <code class="inline">chunks = parse_png_chunks(data)</code></li>
+          <li>Смотрим — есть ли chunk с типом <code class="inline">__APPENDED__</code>?</li>
+          <li>Да! Берём appended bytes.</li>
+          <li>Проверяем сигнатуру: <code class="inline">appended.startswith(b'PK\x03\x04')</code> → True, это ZIP</li>
+          <li>Открываем как ZIP: <code class="inline">zf = zipfile.ZipFile(io.BytesIO(appended))</code></li>
+          <li>Читаем флаг: <code class="inline">zf.read('flag.txt').decode()</code></li>
+        </ol>
+        <div class="callout callout-cyan">
+          <strong>Стандартные библиотеки</strong> (PIL, OpenCV) не видят данные после IEND. А наш парсер — видит. Это и есть forensics — найти то, что обычные инструменты не показывают.
+        </div>
+      </div>
+      <div class="col">
+        <h4 style="color:var(--cyan)">Полное решение</h4>
+<pre class="scroll" style="max-height:340px"><code>import zipfile, io
+with open('image.png', 'rb') as f:
+    data = f.read()
+chunks = parse_png_chunks(data)
+for ctype, cdata, _ in chunks:
+    if ctype == b'__APPENDED__':
+        if cdata.startswith(b'PK\x03\x04'):
+            zf = zipfile.ZipFile(io.BytesIO(cdata))
+            print(zf.namelist())
+            # ['flag.txt']
+            print(zf.read('flag.txt').decode())
+            # ctf{found_in_appended_zip}
+        break</code></pre>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Пройти пошагово.</strong> Подчеркнуть: парсер PNG останавливается на IEND, мы же продолжаем читать.</p>
+    <span class="nlabel">Преимущество ручного парсинга</span>
+    <p>Стандартные библиотеки (PIL, OpenCV) не видят данные после IEND, а наш парсер — видит. Это и есть forensics — найти то, что обычные инструменты не показывают.</p>
+    <span class="nlabel">cdata.startswith(b'PK\x03\x04')</span>
+    <p>Проверяем что appended действительно ZIP. Вдруг там просто текст или другой формат? Проверка по сигнатуре — лучшая практика.</p>
+    <span class="nlabel">io.BytesIO(cdata)</span>
+    <p>ZipFile требует file-like объект. BytesIO оборачивает bytes в такой объект. Без этого не сработает.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 34 — Практика Занятие 2 обзор ====================== -->
+<section class="slide" data-slide="34">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Практика Занятие 2 — мини-CTF</h2>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num">8</div><div class="stat-label">задач</div></div>
+      <div class="stat"><div class="stat-num cyan">60</div><div class="stat-label">минут</div></div>
+      <div class="stat"><div class="stat-num green">ctf{...}</div><div class="stat-label">формат флага</div></div>
+      <div class="stat"><div class="stat-num">3+3+2</div><div class="stat-label">easy / medium / hard</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px">
+      <div class="card">
+        <h4 style="color:var(--green)">3 × Easy</h4>
+        <p style="font-size:13px">PNG tEXt, ZIP comment, IDAT count</p>
+        <h4 style="color:var(--amber);margin-top:8px">3 × Medium</h4>
+        <p style="font-size:13px">custom chunk, brute force ZIP, PNG+ZIP</p>
+        <h4 style="color:var(--red);margin-top:8px">2 × Hard</h4>
+        <p style="font-size:13px">polyglot, nested ZIP (matryoshka)</p>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--cyan)">Tips</h4>
+        <ul style="font-size:13px">
+          <li><code class="inline">parse_png_chunks(data)</code> — для всех PNG задач</li>
+          <li><code class="inline">zipfile.ZipFile(io.BytesIO(data))</code> — для всех ZIP задач</li>
+          <li>regex <code class="inline">r'ctf\{[^}]+\}'</code> — стандартный поиск флага</li>
+          <li>Для brute force: цикл с <code class="inline">try/except RuntimeError, BadZipFile</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      60 минут, режим соревнования. Кто решит все 8 — bonus: придумать polyglot-задачу. Задача 8 (nested.zip) — самая сложная, оставь 15 минут.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>60 минут, режим соревнования.</strong> Кто решит все 8 — bonus: придумать polyglot-задачу.</p>
+    <span class="nlabel">Задача 8 (nested.zip)</span>
+    <p>Самая сложная, оставь 15 минут. Это матрёшка — ZIP внутри ZIP внутри ZIP.</p>
+    <span class="nlabel">Ходить по классу</span>
+    <p>Подсказывать стратегию, не давать готовые ответы. Спрашивать: "Что показал parse_png_chunks?", "Есть ли chunk с типом __APPENDED__?".</p>
+    <span class="nlabel">Тайминг слайда</span>
+    <p>2 минуты на обзор, затем 60 минут практики.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 35 — Задачи 1-3 (Easy L2) ====================== -->
+<section class="slide" data-slide="35">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Задачи 1–3 <span class="badge badge-easy">Easy</span></h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 1</span></div>
+        <div class="task-title">Файл <code class="inline">png_task1.png</code>. Извлеките все tEXt-чанки. Найдите флаг.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          <code class="inline">parse_png_chunks(data)</code> → найти чанк типа <code class="inline">b'tEXt'</code> → разделить по <code class="inline">\x00</code>.
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 2</span></div>
+        <div class="task-title">Файл <code class="inline">zip_task2.zip</code>. Выведите список файлов и комментарий архива. Флаг в комментарии.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          <code class="inline">zf.namelist()</code> и <code class="inline">zf.comment.decode()</code>.
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-easy">easy</span><span class="task-num">Задача 3</span></div>
+        <div class="task-title">Файл <code class="inline">png_task3.png</code>. Сколько IDAT-чанков в файле? Флаг в формате <code class="inline">ctf{N_idat_chunks}</code>.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          <code class="inline">sum(1 for ctype, _, _ in chunks if ctype == b'IDAT')</code>.
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Все три — прямое применение <code class="inline">parse_png_chunks</code> и <code class="inline">zipfile</code>. Должны решить за 10–15 минут.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Все три — прямое применение parse_png_chunks и zipfile.</strong></p>
+    <span class="nlabel">Task 1</span>
+    <p>Прямое применение parse_png_chunks + tEXt. Флаг в Comment keyword.</p>
+    <span class="nlabel">Task 2</span>
+    <p><code>zf.namelist()</code> + <code>zf.comment</code>. Флаг в архивном комментарии.</p>
+    <span class="nlabel">Task 3</span>
+    <p><code>sum(1 for ctype, _, _ in chunks if ctype == b'IDAT')</code>. В нашем PNG будет 3 IDAT чанка → ответ <code>ctf{3_idat_chunks}</code>.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~15 минут на все три.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 36 — Задачи 4-6 (Medium L2) ====================== -->
+<section class="slide" data-slide="36">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Задачи 4–6 <span class="badge badge-medium">Medium</span></h2>
+    <div class="three-col" style="margin-top:6px">
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 4</span></div>
+        <div class="task-title">Файл <code class="inline">png_task4.png</code>. В файле есть чанк с нестандартным именем <code class="inline">prNt</code> (похоже на переименованный <code class="inline">tEXt</code>). Найдите флаг в данных всех чанков.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          Проходим по ВСЕМ чанкам и ищем regex в данных каждого, не только в tEXt.
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 5</span></div>
+        <div class="task-title">Файл <code class="inline">zip_task5.zip</code>. Внутри <code class="inline">flag.txt</code>, но архив защищён паролем. Пароль — число от 0 до 9999. Брутфорс.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          Цикл <code class="inline">for pwd in range(0, 10000): try zf.read('flag.txt', pwd=str(pwd).encode()) except: continue</code>.
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-medium">medium</span><span class="task-num">Задача 6</span></div>
+        <div class="task-title">Файл <code class="inline">png_task6.png</code>. Это PNG с дописанным ZIP-архивом после IEND. Извлеките ZIP и достаньте флаг.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          Повторение разбора со слайда 33. Найти chunk <code class="inline">__APPENDED__</code>.
+        </div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:8px">
+      <strong>Task 5 — брутфорс.</strong> В Python 3.12 при неверном пароле иногда поднимается <code class="inline">BadZipFile</code>, не только <code class="inline">RuntimeError</code>. Ловить оба.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Task 4 — проходим по ВСЕМ чанкам.</strong> Не только в tEXt — ищем regex в данных каждого. Это расширенный подход.</p>
+    <span class="nlabel">Task 5 — брутфорс</span>
+    <p>Цикл <code>for pwd in range(0, 10000): try zf.read('flag.txt', pwd=str(pwd).encode()) except: continue</code>. Пароль в нашей задаче = 1337.</p>
+    <span class="nlabel">Task 5 — Python 3.12</span>
+    <p>В Python 3.12 при неверном пароле иногда поднимается <code>BadZipFile</code> (плохой CRC после декода мусора), не только <code>RuntimeError</code>. Ловить оба: <code>except (RuntimeError, zipfile.BadZipFile)</code>.</p>
+    <span class="nlabel">Task 6 — повторение</span>
+    <p>Это повторение разбора со слайда 33. Если ученики смотрели демо — должны решить быстро.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~20 минут на все три.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 37 — Задачи 7-8 (Hard L2) ====================== -->
+<section class="slide" data-slide="37">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Задачи 7–8 <span class="badge badge-hard">Hard</span></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;flex:1;min-height:0">
+      <div class="task-card">
+        <div><span class="badge badge-hard">hard</span><span class="task-num">Задача 7</span></div>
+        <div class="task-title">Файл <code class="inline">polyglot.bin</code>. Это файл, который читается как PNG (если интерпретировать сначала) и как ZIP (если найти PK-сигнатуру). Найдите флаг в обоих представлениях.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          PNG-флаг в tEXt-чанке, ZIP-флаг в архивном комментарии.
+        </div>
+      </div>
+      <div class="task-card">
+        <div><span class="badge badge-hard">hard</span><span class="task-num">Задача 8</span></div>
+        <div class="task-title">Файл <code class="inline">nested.zip</code>. Это матрёшка: ZIP внутри ZIP внутри ZIP. Каждый внутренний архив защищён паролем. Имя файла в каждом уровне — подсказка к паролю следующего.</div>
+        <div class="tip-box">
+          <span class="tip-h">Подсказка</span>
+          Имена файлов — <code class="inline">password_is_42.zip</code>, <code class="inline">try_1337.zip</code>. Пароли — числа.
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-red" style="margin-top:8px">
+      <strong>Task 7 — самая важная концепция.</strong> Polyglot — файл, валидный в нескольких форматах. В нашем случае PNG в начале + ZIP в конце. <strong>Task 8 — типичная matryoshka.</strong> Решается через 3 уровня zipfile.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Task 7 — классический polyglot.</strong> PNG-парсер останавливается на IEND, ZIP-парсер ищет PK-сигнатуру — поэтому они не мешают друг другу.</p>
+    <span class="nlabel">Task 7 — два представления</span>
+    <ol style="font-size:13.5px;padding-left:18px">
+      <li>PNG view: флаг в tEXt-чанке (как обычно)</li>
+      <li>ZIP view: найти <code>data.find(b'PK\x03\x04')</code>, открыть как ZIP, флаг в <code>zf.comment</code></li>
+    </ol>
+    <span class="nlabel">Task 8 — matryoshka</span>
+    <p>Внутри: outer (no pwd) → <code>password_is_42.zip</code> → inner1 (pwd=42) → <code>try_1337.zip</code> → inner2 (pwd=1337) → <code>flag.txt</code>. Каждый имя файла literally говорит пароль.</p>
+    <span class="nlabel">Подсказка для тех кто застрял</span>
+    <p>Читай имена файлов — они literally говорят пароль. Можно автоматизировать: regex на <code>\d+</code> в имени файла.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~15-20 минут. Задача 8 самая долгая.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 38 — Решения L2 1-3 ====================== -->
+<section class="slide" data-slide="38">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Решения 1–3</h2>
+    <div class="card card-tight" style="border-left:3px solid var(--green)">
+      <h4 style="color:var(--green)">Решение 1 — PNG tEXt → ctf{png_text_chunk}</h4>
+<pre style="font-size:11.5px"><code>import re
+with open('forensics_files/png_task1.png', 'rb') as f:
+    data = f.read()
+for ctype, cdata, _ in parse_png_chunks(data):
+    if ctype == b'tEXt':
+        m = re.search(rb'ctf\{[^}]+\}', cdata)
+        if m:
+            print(m.group(0).decode())
+            break
+# ctf{png_text_chunk}</code></pre>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--green)">
+      <h4 style="color:var(--green)">Решение 2 — ZIP comment → ctf{zip_archive_comment}</h4>
+<pre style="font-size:11.5px"><code>import zipfile
+zf = zipfile.ZipFile('forensics_files/zip_task2.zip')
+print('Files:', zf.namelist())
+print('Comment:', zf.comment.decode())
+# ctf{zip_archive_comment}</code></pre>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--green)">
+      <h4 style="color:var(--green)">Решение 3 — IDAT count → ctf{3_idat_chunks}</h4>
+<pre style="font-size:11.5px"><code>with open('forensics_files/png_task3.png', 'rb') as f:
+    data = f.read()
+idat_count = sum(1 for ctype, _, _ in parse_png_chunks(data)
+                 if ctype == b'IDAT')
+print(f'ctf{{{idat_count}_idat_chunks}}')
+# ctf{3_idat_chunks}</code></pre>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Все три — прямое применение parse_png_chunks и zipfile.</strong></p>
+    <span class="nlabel">f-string в решении 3</span>
+    <p><code>f'ctf{{{idat_count}_idat_chunks}}'</code> — двойные <code>{{</code> и <code>}}</code> экранируют фигурные скобки в f-string. Иначе Python подумает что это выражение.</p>
+    <span class="nlabel">regex на bytes</span>
+    <p>В решении 1: <code>re.search(rb'ctf\{[^}]+\}', cdata)</code> — <code>rb</code> = raw bytes pattern. Применяется к bytes, возвращает bytes-матч.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 39 — Решения L2 4-6 ====================== -->
+<section class="slide" data-slide="39">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Решения 4–6</h2>
+    <div class="card card-tight" style="border-left:3px solid var(--amber)">
+      <h4 style="color:var(--amber)">Решение 4 — custom chunk → ctf{custom_chunk_found}</h4>
+<pre style="font-size:11px"><code>import re
+with open('forensics_files/png_task4.png', 'rb') as f:
+    data = f.read()
+# Проходим по ВСЕМ чанкам, ищем regex в данных
+for ctype, cdata, _ in parse_png_chunks(data):
+    print(f'chunk type: {ctype}')
+    m = re.search(rb'ctf\{[^}]+\}', cdata)
+    if m:
+        print(f'  flag in {ctype}: {m.group(0).decode()}')
+# Флаг найдётся в чанке 'prNt'</code></pre>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--amber)">
+      <h4 style="color:var(--amber)">Решение 5 — brute force ZIP → password=1337, ctf{brute_force_zip}</h4>
+<pre style="font-size:11px"><code>import zipfile
+zf = zipfile.ZipFile('forensics_files/zip_task5.zip')
+for pwd_int in range(0, 10000):
+    try:
+        pwd = str(pwd_int).encode()
+        result = zf.read('flag.txt', pwd=pwd)
+        if b'ctf{' in result:
+            print(f'Password: {pwd_int}')
+            print(f'Flag: {result.decode()}')
+            break
+    except (RuntimeError, zipfile.BadZipFile):
+        continue
+# Password: 1337
+# Flag: ctf{brute_force_zip}</code></pre>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--amber)">
+      <h4 style="color:var(--amber)">Решение 6 — PNG + appended ZIP → ctf{appended_zip_after_png}</h4>
+<pre style="font-size:11px"><code>import zipfile, io
+with open('forensics_files/png_task6.png', 'rb') as f:
+    data = f.read()
+for ctype, cdata, _ in parse_png_chunks(data):
+    if ctype == b'__APPENDED__' and cdata.startswith(b'PK\x03\x04'):
+        zf = zipfile.ZipFile(io.BytesIO(cdata))
+        print(zf.read('flag.txt').decode())
+        break
+# ctf{appended_zip_after_png}</code></pre>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Task 5 — важно ловить и RuntimeError, и BadZipFile.</strong></p>
+    <span class="nlabel">Python 3.12 нюанс</span>
+    <p>В Python 3.12 при неверном пароле иногда поднимается BadZipFile (плохой CRC после декода мусора), не только RuntimeError. Ловить оба.</p>
+    <span class="nlabel">Task 6 — cdata.startswith(b'PK\x03\x04')</span>
+    <p>Использовать <code>cdata.startswith(b'PK\x03\x04')</code> для проверки что appended — это ZIP. Вдруг там другой формат?</p>
+    <span class="nlabel">Task 4 — все чанки</span>
+    <p>Проходим по всем чанкам и ищем regex. Если чанк называется <code>prNt</code> (вместо <code>tEXt</code>) — обычная проверка на tEXt его пропустит. А regex по данным всех чанков — найдёт.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~7 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 40 — Решения L2 7-8 ====================== -->
+<section class="slide" data-slide="40">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Решения 7–8</h2>
+    <div class="card card-tight" style="border-left:3px solid var(--red)">
+      <h4 style="color:var(--red)">Решение 7 — polyglot → ctf{png_view}, ctf{zip_view}</h4>
+<pre class="scroll" style="max-height:220px;font-size:10.5px"><code>import re, zipfile, io
+with open('forensics_files/polyglot.bin', 'rb') as f:
+    data = f.read()
+# PNG view: флаг в tEXt-чанке
+for ctype, cdata, _ in parse_png_chunks(data):
+    if ctype == b'tEXt':
+        m = re.search(rb'ctf\{[^}]+\}', cdata)
+        if m:
+            print('PNG flag:', m.group(0).decode())
+            break
+# PNG flag: ctf{png_view}
+
+# ZIP view: найти PK-сигнатуру, открыть как ZIP
+zip_start = data.find(b'PK\x03\x04')
+if zip_start &gt;= 0:
+    zf = zipfile.ZipFile(io.BytesIO(data[zip_start:]))
+    print('ZIP comment:', zf.comment.decode())
+    # ctf{zip_view}</code></pre>
+    </div>
+    <div class="card card-tight" style="border-left:3px solid var(--red)">
+      <h4 style="color:var(--red)">Решение 8 — nested ZIP → ctf{nested_zip_matrioshka}</h4>
+<pre class="scroll" style="max-height:240px;font-size:10.5px"><code>import zipfile, io
+# Level 0: outer (no password)
+with open('forensics_files/nested.zip', 'rb') as f:
+    data0 = f.read()
+zf0 = zipfile.ZipFile(io.BytesIO(data0))
+print('Level 0:', zf0.namelist())
+# ['password_is_42.zip']
+
+# Level 1: открываем password_is_42.zip (no pwd), как ZIP
+inner1 = zf0.read('password_is_42.zip')
+zf1 = zipfile.ZipFile(io.BytesIO(inner1))
+print('Level 1:', zf1.namelist())
+# ['try_1337.zip']
+
+# Level 2: читаем try_1337.zip с pwd=42
+inner2 = zf1.read('try_1337.zip', pwd=b'42')
+zf2 = zipfile.ZipFile(io.BytesIO(inner2))
+print('Level 2:', zf2.namelist())
+# ['flag.txt']
+
+# Level 3: читаем flag.txt с pwd=1337
+flag = zf2.read('flag.txt', pwd=b'1337').decode()
+print('Flag:', flag)
+# ctf{nested_zip_matrioshka}</code></pre>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Task 7 — классический polyglot.</strong></p>
+    <span class="nlabel">PNG-парсер останавливается на IEND</span>
+    <p>ZIP-парсер ищет PK-сигнатуру. Поэтому они не мешают друг другу. Можно читать файл как PNG и как ZIP независимо.</p>
+    <span class="nlabel">Task 8 — обратить внимание</span>
+    <p>Каждое имя файла literally говорит пароль ('password_is_42' → пароль 42). Можно автоматизировать: regex на <code>\d+</code> в имени файла.</p>
+    <span class="nlabel">Автоматизация task 8</span>
+<pre style="font-size:11px;margin-top:6px"><code>import re
+m = re.search(r'\d+', filename)
+if m:
+    pwd = m.group(0).encode()</code></pre>
+    <span class="nlabel">Тайминг</span>
+    <p>~10 минут.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 41 — Итоги Занятия 2 ====================== -->
+<section class="slide" data-slide="41">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Итоги Занятия 2 — и всего модуля</h2>
+    <div class="card" style="border-left:3px solid var(--violet)">
+      <h4 style="color:var(--violet-soft)">Key takeaways</h4>
+      <ol style="font-size:13.5px;margin:0;padding-left:20px">
+        <li><strong>PNG = chunks.</strong> Парсится 15 строками Python. tEXt-чанк — топ место для сокрытия.</li>
+        <li><strong>ZIP = zipfile.</strong> <code class="inline">namelist()</code>, <code class="inline">read(name, pwd=...)</code>, <code class="inline">comment</code>. Brute force — за 5 строк.</li>
+        <li><strong>Дописанные данные после IEND/EOCD</strong> — классический приём сокрытия.</li>
+        <li><strong>Polyglot / nested</strong> — продвинутые техники, но решаются теми же инструментами.</li>
+      </ol>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px">
+      <div class="card">
+        <h4 style="color:var(--cyan)">Что вы умеете после 2 занятий</h4>
+        <ul style="font-size:12.5px">
+          <li>Читать любой файл как байты</li>
+          <li>Делать hex dump, extract_strings, detect_type</li>
+          <li>Парсить PNG chunks вручную</li>
+          <li>Работать с ZIP через stdlib</li>
+          <li>Находить скрытые данные после EOF</li>
+          <li>Решать polyglot и nested задачи</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--violet-soft)">Next</h4>
+        <p style="font-size:13px"><strong>Priority 4</strong> — стеганография в тексте (zero-width chars, ASCII-арт).</p>
+        <p style="font-size:13px;margin-top:6px"><strong>Priority 5</strong> — реверс Python-скриптов.</p>
+      </div>
+    </div>
+    <div class="callout callout-cyan" style="margin-top:8px">
+      Вы готовы к picoCTF forensics уровня easy/medium. Это уже не учебный, а реальный уровень.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Подвести итоги.</strong> Спросить класс: какая задача была самой сложной? Кто решил polyglot? Кто решил nested (matryoshka)?</p>
+    <span class="nlabel">Похвалить всех</span>
+    <p>Даже те, кто решил только лёгкие — уже молодцы. CTF — это навык, который развивается с практикой.</p>
+    <span class="nlabel">Готовность к picoCTF</span>
+    <p>Объяснить что они готовы к picoCTF forensics уровню easy/medium. Это уже не учебный, а реальный уровень.</p>
+    <span class="nlabel">Что дальше</span>
+    <p>Следующий модуль — стеганография в тексте (zero-width characters, ASCII-арт стеганография, стеганография через регистр). Это креативная тема.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут на итоги.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 42 — Что не успели ====================== -->
+<section class="slide" data-slide="42">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="slide-content">
+    <h2>Что не успели — обзор тем</h2>
+    <div class="stat-row" style="grid-template-columns:1fr 1fr;gap:14px;margin:10px 0">
+      <div class="stat" style="border-left:3px solid var(--violet)">
+        <div class="stat-num" style="font-size:20px">EXIF в JPEG</div>
+        <div class="stat-label">Метаданные в JPEG-маркерах (APP1 = EXIF). Камера, дата, GPS. В CTF — подсказки где сделано фото.</div>
+      </div>
+      <div class="stat" style="border-left:3px solid var(--cyan)">
+        <div class="stat-num" style="font-size:20px">Log analysis</div>
+        <div class="stat-label">Текстовые логи (Apache, auth.log). Поиск подозрительных IP, таймингов. grep/regex + Python.</div>
+      </div>
+      <div class="stat" style="border-left:3px solid var(--amber)">
+        <div class="stat-num" style="font-size:20px">ELF формат</div>
+        <div class="stat-label">Linux-исполняемые файлы. Сегменты, секции, точки входа. Без IDA — чтение через struct.</div>
+      </div>
+      <div class="stat" style="border-left:3px solid var(--red)">
+        <div class="stat-num" style="font-size:20px">Memory dumps</div>
+        <div class="stat-label">Дампы оперативной памяти. Volatility framework (нельзя в школе). Альтернатива — поиск строк через Python.</div>
+      </div>
+    </div>
+    <div class="callout callout-cyan">
+      <strong>EXIF</strong> — можно разобрать на отдельном занятии через struct (разбор JPEG маркеров). <strong>Log analysis</strong> — самая доступная тема, можно дать как домашку. <strong>ELF и memory</strong> — продвинутые, обычно требуют специальных инструментов.
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Краткий обзор тем, которые обычно входят в forensics, но мы не успели.</strong></p>
+    <span class="nlabel">EXIF в JPEG</span>
+    <p>Метаданные в JPEG-маркерах (APP1 = EXIF). Камера, дата, GPS. В CTF — подсказки где сделано фото. Можно разобрать через struct — разбор JPEG маркеров.</p>
+    <span class="nlabel">Log analysis</span>
+    <p>Самая доступная тема — текстовые логи. Поиск подозрительных IP, таймингов. grep/regex + Python. Можно дать как домашку.</p>
+    <span class="nlabel">ELF формат</span>
+    <p>Linux-исполняемые файлы. Сегменты, секции, точки входа. Без IDA — чтение через struct. Продвинутая тема.</p>
+    <span class="nlabel">Memory dumps</span>
+    <p>Дампы оперативной памяти. Volatility framework — стандарт, но нельзя в школе. Альтернатива — поиск строк через Python.</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~3 минуты. Это обзорный слайд.</p>
+  </aside>
+</section>
+
+<!-- ====================== SLIDE 43 — Closing ====================== -->
+<section class="slide" data-slide="43">
+  <div class="corner-mark"><span class="dot"></span>FORENSICS · L2</div>
+  <div class="binary-bg" aria-hidden="true" data-decor>89 50 4E 47 FF D8 FF PK\x03\x04 %PDF IEND ae 42 60 82 PK\x05\x06 ctf{magic_bytes} ctf{png_text_chunk} ctf{after_iend_chunk} ctf{zip_archive_comment} ctf{appended_zip_after_png} ctf{nested_zip_matrioshka} ctf{brute_force_zip} ctf{polyglot_view} ctf{3_idat_chunks} ctf{custom_chunk_found} ctf{lucky_number_13} ctf{every_fifth_byte} ctf{find_me_in_strings} ctf{in_png_text} ctf{in_zip_file} ctf{plain_text_tail} parse_png_chunks extract_strings hexdump detect_type zipfile.ZipFile io.BytesIO struct.unpack('>I') struct.unpack('<H') open('rb') data[:8].hex() data.startswith(b'\x89PNG') re.search(rb'ctf\{[^}]+\}') forensics_setup.py forensics_files/ hexed.it CyberChef picoctf.org ctflearn.com</div>
+  <div class="slide-content" style="position:relative;z-index:2">
+    <h2>Полезные ссылки и <span class="accent-v">что дальше</span></h2>
+    <div class="two-col" style="margin-top:6px">
+      <div class="col">
+        <h4 style="color:var(--cyan)">Ссылки</h4>
+        <ul class="link-list">
+          <li><strong>hexed.it</strong> — <a href="https://hexed.it">hexed.it</a><br><span style="color:var(--text-muted);font-size:12px">онлайн hex editor</span></li>
+          <li><strong>CyberChef</strong> — <a href="https://gchq.github.io/CyberChef">gchq.github.io/CyberChef</a><br><span style="color:var(--text-muted);font-size:12px">From Hex, To Hex, regex</span></li>
+          <li><strong>Python docs</strong> — <a href="https://docs.python.org/3/library/zipfile.html">zipfile</a>, <a href="https://docs.python.org/3/library/struct.html">struct</a>, <a href="https://docs.python.org/3/library/zlib.html">zlib</a></li>
+          <li><strong>picoCTF</strong> — <a href="https://picoctf.org">picoctf.org</a><br><span style="color:var(--text-muted);font-size:12px">Forensics категория — задачи уровня easy/medium</span></li>
+          <li><strong>CTFlearn</strong> — <a href="https://ctflearn.com">ctflearn.com</a><br><span style="color:var(--text-muted);font-size:12px">платформа для тренировки</span></li>
+          <li><strong>PNG spec</strong> — <a href="https://www.w3.org/TR/png/">w3.org/TR/png</a></li>
+          <li><strong>ZIP spec</strong> — <a href="https://pkware.com">pkware.com (APPNOTE.TXT)</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4 style="color:var(--violet-soft)">Что дальше</h4>
+        <div class="card" style="border-left:3px solid var(--violet)">
+          <h4 style="color:var(--violet-soft);margin-bottom:6px">Приоритет 4: Стеганография в тексте</h4>
+          <ul style="font-size:12.5px">
+            <li>Zero-width characters</li>
+            <li>ASCII-арт стеганография</li>
+            <li>Стеганография через регистр</li>
+          </ul>
+        </div>
+        <div class="card" style="border-left:3px solid var(--cyan);margin-top:8px">
+          <h4 style="color:var(--cyan);margin-bottom:6px">Приоритет 5: Реверс Python-скриптов</h4>
+          <ul style="font-size:12.5px">
+            <li><code class="inline">exec</code>/<code class="inline">eval</code> обфускация</li>
+            <li><code class="inline">marshal</code> + <code class="inline">zlib</code></li>
+          </ul>
+        </div>
+        <div class="callout callout-cyan" style="margin-top:8px">
+          Через 2–3 занятия — мини-CTF на 60 минут со всеми темами.
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:14px;padding:14px;border-top:1px solid var(--border)">
+      <p style="font-size:22px;font-weight:600;color:var(--cyan)">Спасибо за модуль! Вопросы?</p>
+    </div>
+  </div>
+  <aside class="speaker-notes">
+    <p><strong>Раздать ученикам ссылку на презентацию.</strong> Рекомендовать picoCTF — раздел Forensics, задачи уровня easy.</p>
+    <span class="nlabel">Совет</span>
+    <p>Bookmark hexed.it и CyberChef. Это базовые инструменты для всего курса.</p>
+    <span class="nlabel">Домашка</span>
+    <p>Решать по 1–2 задачи picoCTF в неделю. Это закрепит навыки и подготовит к следующему модулю.</p>
+    <span class="nlabel">На следующем занятии</span>
+    <p>Начнём со стеганографии в тексте — это креативная тема с быстрым результатом. Zero-width characters — это когда в обычный текст вставляют невидимые символы, кодирующие сообщение.</p>
+    <span class="nlabel">Прощание</span>
+    <p>Поблагодарить за внимание. Спросить, есть ли вопросы. Ответить на каждый — даже на "глупые".</p>
+    <span class="nlabel">Тайминг</span>
+    <p>~5 минут.</p>
+  </aside>
+</section>
+
+</div>
+</div>
+
+<aside class="notes-panel" id="notesPanel">
+  <div class="notes-header">
+    <h3>Заметки преподавателя</h3>
+    <button class="notes-close" id="closeNotes">×</button>
+  </div>
+  <div class="notes-body" id="notesBody"></div>
+</aside>
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  const counter = document.getElementById('counter');
+  const progressFill = document.getElementById('progressFill');
+  const notesPanel = document.getElementById('notesPanel');
+  const notesBody = document.getElementById('notesBody');
+  const notesBtn = document.getElementById('notesBtn');
+  const closeNotes = document.getElementById('closeNotes');
+  const fsBtn = document.getElementById('fsBtn');
+
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+  function show(i){
+    if(i < 0) i = 0;
+    if(i >= total) i = total - 1;
+    slides[current].classList.remove('active');
+    current = i;
+    slides[current].classList.add('active');
+    counter.textContent = pad(current + 1) + ' / ' + pad(total);
+    progressFill.style.width = ((current + 1) / total * 100) + '%';
+    updateNotes();
+  }
+
+  function next(){ show(current + 1); }
+  function prev(){ show(current - 1); }
+  function first(){ show(0); }
+  function last(){ show(total - 1); }
+
+  function updateNotes(){
+    const notes = slides[current].querySelector('.speaker-notes');
+    if(notes){
+      notesBody.innerHTML = notes.innerHTML;
+    } else {
+      notesBody.innerHTML = '<p style="color:var(--text-muted)">Заметок для этого слайда нет.</p>';
+    }
+  }
+
+  function toggleNotes(){
+    notesPanel.classList.toggle('open');
+  }
+
+  function toggleFullscreen(){
+    if(!document.fullscreenElement){
+      document.documentElement.requestFullscreen().catch(()=>{});
+    } else {
+      document.exitFullscreen().catch(()=>{});
+    }
+  }
+
+  function updateScale(){
+    const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    document.documentElement.style.setProperty('--scale', scale);
+  }
+
+  // Syntax highlighting
+  function highlightCode(code){
+    // Escape HTML first
+    code = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Apply highlighting via tokenization
+    const pattern = /(#[^\n]*)|('[^'\n]*')|("[^"\n]*")|(\b\d+\b)|(\b(?:def|import|from|return|for|while|if|else|elif|in|not|and|or|print|class|True|False|None|lambda|with|as|try|except|finally|raise|yield|break|continue|pass|global|nonlocal|assert|del|is|self|open)\b)/g;
+    return code.replace(pattern, (match, com, str1, str2, num, kw) => {
+      if(com) return '<span class="com">' + com + '</span>';
+      if(str1) return '<span class="str">' + str1 + '</span>';
+      if(str2) return '<span class="str">' + str2 + '</span>';
+      if(num) return '<span class="num">' + num + '</span>';
+      if(kw) return '<span class="kw">' + kw + '</span>';
+      return match;
+    });
+  }
+
+  function applyHighlighting(){
+    document.querySelectorAll('pre code').forEach(el => {
+      // Skip if already has spans (manually highlighted)
+      if(el.innerHTML.indexOf('<span') !== -1) return;
+      const raw = el.textContent;
+      if(raw && raw.trim()){
+        el.innerHTML = highlightCode(raw);
+      }
+    });
+  }
+
+  // Event listeners
+  document.addEventListener('keydown', e => {
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    switch(e.key){
+      case 'ArrowRight':
+      case ' ':
+      case 'Enter':
+        e.preventDefault(); next(); break;
+      case 'ArrowLeft':
+        e.preventDefault(); prev(); break;
+      case 'ArrowDown':
+        e.preventDefault(); next(); break;
+      case 'ArrowUp':
+        e.preventDefault(); prev(); break;
+      case 'Home':
+        e.preventDefault(); first(); break;
+      case 'End':
+        e.preventDefault(); last(); break;
+      case 's':
+      case 'S':
+        e.preventDefault(); toggleNotes(); break;
+      case 'f':
+      case 'F':
+        e.preventDefault(); toggleFullscreen(); break;
+      case 'Escape':
+        if(notesPanel.classList.contains('open')){
+          notesPanel.classList.remove('open');
+        }
+        break;
+    }
+  });
+
+  notesBtn.addEventListener('click', toggleNotes);
+  closeNotes.addEventListener('click', toggleNotes);
+  fsBtn.addEventListener('click', toggleFullscreen);
+
+  window.addEventListener('resize', updateScale);
+  updateScale();
+
+  // Init
+  applyHighlighting();
+  show(0);
+})();
+</script>
+</body>
+</html>
